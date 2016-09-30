@@ -2,42 +2,17 @@
 
 var React = require('react-native')
 var Icon = require('react-native-vector-icons/Ionicons')
+
+var List = require('./app/creation/index')
+var Edit = require('./app/edit/index')
+var Account = require('./app/account/index')
+
 var Component = React.Component
 var AppRegistry = React.AppRegistry
 var TabBarIOS = React.TabBarIOS
 var Text = React.Text
 var View = React.View
 var StyleSheet = React.StyleSheet
-
-var List = React.createClass({
-  render: function() {
-    return (
-      <View style={styles.container}>
-        <Text>List Page</Text>
-      </View>
-    )
-  }
-})
-
-var Edit = React.createClass({
-  render: function() {
-    return (
-      <View style={styles.container}>
-        <Text>Edit Page</Text>
-      </View>
-    )
-  }
-})
-
-var Account = React.createClass({
-  render: function() {
-    return (
-      <View style={styles.container}>
-        <Text>Account Page</Text>
-      </View>
-    )
-  }
-})
 
 var dogsay = React.createClass({
 
@@ -47,25 +22,16 @@ var dogsay = React.createClass({
     };
   },
 
-  _renderContent: function(color: string, pageText: string, num?: number) {
-    return (
-      <View style={[styles.tabContent, {backgroundColor: color}]}>
-        <Text style={styles.tabText}>{pageText}</Text>
-        <Text style={styles.tabText}>{num} re-renders of the {pageText}</Text>
-      </View>
-    );
-  },
-
   render: function() {
     return (
       <TabBarIOS tintColor="#ee735c">
         <Icon.TabBarItem
           iconName='ios-videocam-outline'
           selectedIconName='ios-videocam'
-          selected={this.state.selectedTab === 'blueTab'}
+          selected={this.state.selectedTab === 'list'}
           onPress={() => {
             this.setState({
-              selectedTab: 'blueTab',
+              selectedTab: 'list',
             });
           }}>
           <List />
@@ -74,10 +40,10 @@ var dogsay = React.createClass({
           iconName='ios-recording-outline'
           selectedIconName='ios-recording'
           badge={5}
-          selected={this.state.selectedTab === 'redTab'}
+          selected={this.state.selectedTab === 'edit'}
           onPress={() => {
             this.setState({
-              selectedTab: 'redTab',
+              selectedTab: 'edit',
             });
           }}>
           <Edit />
@@ -86,10 +52,10 @@ var dogsay = React.createClass({
           iconName='ios-more-outline'
           selectedIconName='ios-more'
           renderAsOriginal
-          selected={this.state.selectedTab === 'greenTab'}
+          selected={this.state.selectedTab === 'account'}
           onPress={() => {
             this.setState({
-              selectedTab: 'greenTab',
+              selectedTab: 'account',
             });
           }}>
           <Account />
@@ -101,13 +67,9 @@ var dogsay = React.createClass({
 });
 
 var styles = StyleSheet.create({
-  tabContent: {
+  container: {
     flex: 1,
     alignItems: 'center',
-  },
-  tabText: {
-    color: 'white',
-    margin: 50,
   },
 });
 
