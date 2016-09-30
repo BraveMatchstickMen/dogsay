@@ -9,6 +9,36 @@ var Text = React.Text
 var View = React.View
 var StyleSheet = React.StyleSheet
 
+var List = React.createClass({
+  render: function() {
+    return (
+      <View style={styles.container}>
+        <Text>List Page</Text>
+      </View>
+    )
+  }
+})
+
+var Edit = React.createClass({
+  render: function() {
+    return (
+      <View style={styles.container}>
+        <Text>Edit Page</Text>
+      </View>
+    )
+  }
+})
+
+var Account = React.createClass({
+  render: function() {
+    return (
+      <View style={styles.container}>
+        <Text>Account Page</Text>
+      </View>
+    )
+  }
+})
+
 var dogsay = React.createClass({
 
   getInitialState: function() {
@@ -38,7 +68,7 @@ var dogsay = React.createClass({
               selectedTab: 'blueTab',
             });
           }}>
-          {this._renderContent('#414A8C', 'Blue Tab')}
+          <List />
         </Icon.TabBarItem>
         <Icon.TabBarItem
           iconName='ios-recording-outline'
@@ -50,7 +80,7 @@ var dogsay = React.createClass({
               selectedTab: 'redTab',
             });
           }}>
-          {this._renderContent('#783E33', 'Red Tab', this.state.notifCount)}
+          <Edit />
         </Icon.TabBarItem>
         <Icon.TabBarItem
           iconName='ios-more-outline'
@@ -62,7 +92,7 @@ var dogsay = React.createClass({
               selectedTab: 'greenTab',
             });
           }}>
-          {this._renderContent('#21551C', 'Green Tab', this.state.presses)}
+          <Account />
         </Icon.TabBarItem>
       </TabBarIOS>
     );
