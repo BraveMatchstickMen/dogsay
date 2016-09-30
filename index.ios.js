@@ -18,7 +18,7 @@ var dogsay = React.createClass({
 
   getInitialState: function() {
     return {
-      selectedTab: 'blueTab',
+      selectedTab: 'list',
     };
   },
 
