@@ -39,7 +39,6 @@ var dogsay = React.createClass({
         <Icon.TabBarItem
           iconName='ios-recording-outline'
           selectedIconName='ios-recording'
-          badge={5}
           selected={this.state.selectedTab === 'edit'}
           onPress={() => {
             this.setState({
