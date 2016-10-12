@@ -1,6 +1,8 @@
 'use strict';
 
 var React = require('react-native')
+var Mock = require('mockjs')
+
 var Icon = require('react-native-vector-icons/Ionicons')
 var Text = React.Text
 var View = React.View
@@ -73,6 +75,22 @@ var List = React.createClass({
         </View>
       </TouchableHighlight>
     )
+  },
+
+  componentDidMount: function() {
+    this._fetchData()
+  },
+
+  _fetchData: function (){
+    fetch('http://rap.taobao.org/mockjs/8260/api/creations?accessToken=act')
+    .then((response) => response.json())
+    .then((response) => {
+      var data = Mock.mock(response);
+      console.log(data);
+    })
+    .catch((error) => {
+      console.warn(error);
+    });
   },
 
   render: function() {
