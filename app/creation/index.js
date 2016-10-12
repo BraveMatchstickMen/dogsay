@@ -86,6 +86,11 @@ var List = React.createClass({
     .then((response) => response.json())
     .then((response) => {
       var data = Mock.mock(response);
+      if(data.success) {
+        this.setState({
+          dataSource: this.state.dataSource.cloneWithRows(data.data)
+        })
+      }
       console.log(data);
     })
     .catch((error) => {
