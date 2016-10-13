@@ -1,9 +1,11 @@
 'use strict';
 
 var React = require('react-native')
-var Mock = require('mockjs')
-
 var Icon = require('react-native-vector-icons/Ionicons')
+
+var request = require('../common/request')
+var config = require('../common/config')
+
 var Text = React.Text
 var View = React.View
 var ListView = React.ListView
@@ -82,16 +84,15 @@ var List = React.createClass({
   },
 
   _fetchData: function (){
-    fetch('http://rap.taobao.org/mockjs/8260/api/creations?accessToken=act')
-    .then((response) => response.json())
-    .then((response) => {
-      var data = Mock.mock(response);
+    request.get(config.api.base + config.api.creations, {
+      accessToken: 'abcdef'
+    })
+    .then((data) => {
       if(data.success) {
         this.setState({
           dataSource: this.state.dataSource.cloneWithRows(data.data)
         })
       }
-      console.log(data);
     })
     .catch((error) => {
       console.warn(error);
