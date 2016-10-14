@@ -13,6 +13,8 @@ var StyleSheet = React.StyleSheet
 var Image = React.Image
 var Dimensions = React.Dimensions
 var TouchableHighlight = React.TouchableHighlight
+var ActivityIndicatorIOS = React.ActivityIndicatorIOS
+var RefreshControl = React.RefreshControl
 
 var width = Dimensions.get('window').width
 
@@ -28,7 +30,8 @@ var List = React.createClass({
     return {
       dataSource: ds.cloneWithRows([]),
       isLoadingTail: false,
-      nextPage: 0
+      nextPage: 0,
+      isRefreshing: false 
     };
   },
 
@@ -68,13 +71,21 @@ var List = React.createClass({
   },
 
   componentDidMount: function() {
-    this._fetchData()
+    this._fetchData(1)
   },
 
   _fetchData: function (page){
-    this.setState({
-      isLoadingTail: true
-    })
+    var that = this
+
+    if (page !== 0) {
+      this.setState({
+        isLoadingTail: true
+      })
+    } else {
+      this.setState({
+        isRefreshing: true
+      })
+    }
 
     request.get(config.api.base + config.api.creations, {
       accessToken: 'abcdef',
@@ -84,22 +95,42 @@ var List = React.createClass({
       if(data.success) {
         var items = cachedResults.items.slice()
 
-        items = items.concat(data.data)
-
+        if (page !== 0) {
+          items = items.concat(data.data)
+          cachedResults.nextPage += 1
+        } 
+        else {
+          items = data.data.concat(items)
+        }
         cachedResults.items = items
         cachedResults.total = data.total
 
-        this.setState({
-          isLoadingTail: false,
-          dataSource: this.state.dataSource.cloneWithRows(cachedResults.items)
-        })
+        setTimeout(function() {
+          if (page !== 0) {
+            that.setState({
+              isLoadingTail: false,
+              dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
+            })
+          } else {
+            that.setState({
+              isRefreshing: false,
+              dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
+            })
+          }
+        }, 20)
       }
     })
     .catch((error) => {
-      this.setState({
-        isLoadingTail: false
-      })
-      console.warn(error);
+      if (page !== 0) {
+        this.setState({
+          isLoadingTail: false
+        })
+      } 
+      else {
+        this.setState({
+          isRefreshing: false
+        })
+      } 
     });
   },
 
@@ -115,6 +146,28 @@ var List = React.createClass({
     this._fetchData(page)
   },
 
+  _onRefresh() {
+    if (!this._hasMore() || this.state.isRefreshing) {
+      return
+    }
+    this._fetchData(0)
+  },
+
+  _renderFooter() {
+    if (!this._hasMore() && cachedResults.total !== 0) {
+      return (
+        <View style={styles.loadingMore}>
+          <Text style={styles.loadingText}>没有更多了</Text>
+        </View>
+      )
+    }
+    if (!this.state.isLoadingTail) {
+      return <View style={styles.loadingMore} />
+    }
+
+    return <ActivityIndicatorIOS style={styles.loadingMore} />
+  },
+
   render: function() {
     return (
       <View style={styles.container}>
@@ -124,9 +177,19 @@ var List = React.createClass({
         <ListView
           dataSource={this.state.dataSource}
           renderRow={this._renderRow}
+          renderFooter={this._renderFooter}
           onEndReached={this._fetchMoreData}
-          onEndReachedThreshould={20}
+          onEndReachedThreshold={20}
+          refreshControl={
+            <RefreshControl
+            refreshing={this.state.isRefreshing}
+            onRefresh={this._onRefresh}
+            titleColor='ff6600'
+            title='拼命加载中'
+            />
+          }
           enableEmptySections={true}
+          showsVerticalScrollIndicator={false}
           automaticallyAdjustContentInsets={false} 
         />
       </View>
@@ -198,6 +261,13 @@ var styles = StyleSheet.create({
   commentIcon: {
     fontSize: 22,
     color: '#333'
+  },
+  loadingMore: {
+    marginVertical: 20
+  },
+  loadingText: {
+    color: '#777',
+    textAlign: 'center'
   }
 });
 
