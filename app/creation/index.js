@@ -16,35 +16,23 @@ var TouchableHighlight = React.TouchableHighlight
 
 var width = Dimensions.get('window').width
 
+var cachedResults = {
+  nextPage: 1,
+  items: [],
+  total: 0
+}
+
 var List = React.createClass({
   getInitialState: function() {
     var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
     return {
-      dataSource: ds.cloneWithRows([
-         {
-        "_id":"330000197401023499","thumb":"http://dummyimage.com/1280x720/fb756d)","title":"测试内容9055","video":"https://developer.apple.com/videos/images/ogg_bumper_no_tv.ogv"
-    }
-    ,
-    {
-        "_id":"410000198502139006","thumb":"http://dummyimage.com/1280x720/613516)","title":"测试内容9055","video":"https://developer.apple.com/videos/images/ogg_bumper_no_tv.ogv"
-    }
-    ,
-    {
-        "_id":"33000019710925576X","thumb":"http://dummyimage.com/1280x720/6c59c7)","title":"测试内容9055","video":"https://developer.apple.com/videos/images/ogg_bumper_no_tv.ogv"
-    }
-    ,
-    {
-        "_id":"530000201304234055","thumb":"http://dummyimage.com/1280x720/409ff9)","title":"测试内容9055","video":"https://developer.apple.com/videos/images/ogg_bumper_no_tv.ogv"
-    }
-    ,
-    {
-        "_id":"610000197910215437","thumb":"http://dummyimage.com/1280x720/fb76a9)","title":"测试内容9055","video":"https://developer.apple.com/videos/images/ogg_bumper_no_tv.ogv"
-    }
-      ]),
+      dataSource: ds.cloneWithRows([]),
+      isLoadingTail: false,
+      nextPage: 0
     };
   },
 
-  renderRow: function(row) {
+  _renderRow: function(row) {
     return (
       <TouchableHighlight>
         <View style={styles.item}>
@@ -83,20 +71,48 @@ var List = React.createClass({
     this._fetchData()
   },
 
-  _fetchData: function (){
+  _fetchData: function (page){
+    this.setState({
+      isLoadingTail: true
+    })
+
     request.get(config.api.base + config.api.creations, {
-      accessToken: 'abcdef'
+      accessToken: 'abcdef',
+      page: page
     })
     .then((data) => {
       if(data.success) {
+        var items = cachedResults.items.slice()
+
+        items = items.concat(data.data)
+
+        cachedResults.items = items
+        cachedResults.total = data.total
+
         this.setState({
-          dataSource: this.state.dataSource.cloneWithRows(data.data)
+          isLoadingTail: false,
+          dataSource: this.state.dataSource.cloneWithRows(cachedResults.items)
         })
       }
     })
     .catch((error) => {
+      this.setState({
+        isLoadingTail: false
+      })
       console.warn(error);
     });
+  },
+
+  _hasMore() {
+    return cachedResults.items.length !== cachedResults.total
+  },
+
+  _fetchMoreData() {
+    if (!this._hasMore() || this.state.isLoadingTail) {
+      return
+    }
+    var page = cachedResults.nextPage
+    this._fetchData(page)
   },
 
   render: function() {
@@ -107,7 +123,10 @@ var List = React.createClass({
         </View>
         <ListView
           dataSource={this.state.dataSource}
-          renderRow={this.renderRow}
+          renderRow={this._renderRow}
+          onEndReached={this._fetchMoreData}
+          onEndReachedThreshould={20}
+          enableEmptySections={true}
           automaticallyAdjustContentInsets={false} 
         />
       </View>
