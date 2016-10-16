@@ -5,6 +5,7 @@ var Icon = require('react-native-vector-icons/Ionicons')
 
 var request = require('../common/request')
 var config = require('../common/config')
+var Detail = require('./detail')
 
 var Text = React.Text
 var View = React.View
@@ -66,7 +67,7 @@ var Item = React.createClass({
   render() {
     var row = this.state.row
     return (
-      <TouchableHighlight>
+      <TouchableHighlight onPress={this.props.onSelect}>
         <View style={styles.item}>
           <Text style={styles.title}>{row.title}</Text>
           <Image
@@ -113,7 +114,10 @@ var List = React.createClass({
   },
 
   _renderRow: function(row) {
-    return <Item row={row} />
+    return <Item 
+      key={row._id} 
+      onSelect={() => this._loadPage(row)} 
+      row={row} />
   },
 
   componentDidMount: function() {
@@ -212,6 +216,16 @@ var List = React.createClass({
     }
 
     return <ActivityIndicatorIOS style={styles.loadingMore} />
+  },
+
+  _loadPage(row) {
+    this.props.navigator.push({
+      name: 'detail',
+      component: Detail,
+      params: {
+        row: row
+      }
+    })
   },
 
   render: function() {

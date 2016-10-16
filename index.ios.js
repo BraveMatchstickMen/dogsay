@@ -13,6 +13,7 @@ var TabBarIOS = React.TabBarIOS
 var Text = React.Text
 var View = React.View
 var StyleSheet = React.StyleSheet
+var Navigator = React.Navigator
 
 var dogsay = React.createClass({
 
@@ -34,7 +35,20 @@ var dogsay = React.createClass({
               selectedTab: 'list',
             });
           }}>
-          <List />
+          <Navigator
+            initialRoute={{
+              name: 'list',
+              component: List
+            }}
+            configureScene={(route) => {
+              return Navigator.SceneConfigs.FloatFromRight
+            }}
+            renderScene={(route, navigator) => {
+              var Component = route.component
+
+              return <Component {...route.params} navigator={navigator}
+                />
+            }} />
         </Icon.TabBarItem>
         <Icon.TabBarItem
           iconName='ios-recording-outline'
