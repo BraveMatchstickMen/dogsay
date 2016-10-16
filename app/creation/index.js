@@ -15,6 +15,7 @@ var Dimensions = React.Dimensions
 var TouchableHighlight = React.TouchableHighlight
 var ActivityIndicatorIOS = React.ActivityIndicatorIOS
 var RefreshControl = React.RefreshControl
+var AlertIOS = React.AlertIOS
 
 var width = Dimensions.get('window').width
 
@@ -24,18 +25,46 @@ var cachedResults = {
   total: 0
 }
 
-var List = React.createClass({
-  getInitialState: function() {
-    var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+var Item = React.createClass({
+  getInitialState() {
+    var row = this.props.row
+
     return {
-      dataSource: ds.cloneWithRows([]),
-      isLoadingTail: false,
-      nextPage: 0,
-      isRefreshing: false 
-    };
+      up: row.voted,
+      row: row
+    }
   },
 
-  _renderRow: function(row) {
+  _up() {
+    var that = this
+    var up = !this.state.up
+    var row = this.state.row
+    var url = config.api.base + config.api.up
+
+    var body = {
+      id: row._id,
+      up: up ? 'yes' : 'no',
+      accessToken: 'abcee'
+    }
+
+    request.post(url, body)
+      .then(function(data) {
+        if (data && data.success) {
+          that.setState({
+            up: up
+          })
+        }
+        else {
+          AlertIOS.alert('点赞失败，稍后重试')
+        }
+      })
+      .catch(function(err) {
+        console.log(err)
+      })
+  },
+
+  render() {
+    var row = this.state.row
     return (
       <TouchableHighlight>
         <View style={styles.item}>
@@ -52,10 +81,11 @@ var List = React.createClass({
           <View style={styles.itemFooter}>
             <View style={styles.handleBox}>
               <Icon
-                name='ios-heart-outline'
+                name={this.state.up ? 'ios-heart' : 'ios-heart-outline'}
                 size={28}
-                style={styles.up} />
-              <Text style={styles.handleText}>喜欢</Text>
+                onPress={this._up}
+                style={[styles.up, this.state.up ? null : styles.down]} />
+              <Text style={styles.handleText} onPress={this._up}>喜欢</Text>
             </View>
             <View style={styles.handleBox}>
               <Icon
@@ -68,6 +98,22 @@ var List = React.createClass({
         </View>
       </TouchableHighlight>
     )
+  }
+})
+
+var List = React.createClass({
+  getInitialState: function() {
+    var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+    return {
+      dataSource: ds.cloneWithRows([]),
+      isLoadingTail: false,
+      nextPage: 0,
+      isRefreshing: false 
+    };
+  },
+
+  _renderRow: function(row) {
+    return <Item row={row} />
   },
 
   componentDidMount: function() {
@@ -254,9 +300,13 @@ var styles = StyleSheet.create({
     borderRadius: 23,
     color: '#ed7b66'
   },
-  up: {
+  down: {
     fontSize: 22,
     color: '#333'
+  },
+  up: {
+    fontSize: 22,
+    color: '#ed7b66'
   },
   commentIcon: {
     fontSize: 22,
