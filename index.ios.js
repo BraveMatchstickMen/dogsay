@@ -7,7 +7,6 @@ var List = require('./app/creation/index')
 var Edit = require('./app/edit/index')
 var Account = require('./app/account/index')
 
-var Component = React.Component
 var AppRegistry = React.AppRegistry
 var TabBarIOS = React.TabBarIOS
 var Text = React.Text
