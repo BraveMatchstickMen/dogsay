@@ -19,7 +19,9 @@ var Detail = React.createClass({
     return {
       data: data,
 
-      videoReady: false,
+      videoLoaded: false,
+      playing: false,
+
       videoProgress: 0.01,
       videoTotal: 0,
       currentTime: 0,
@@ -45,32 +47,47 @@ var Detail = React.createClass({
   },
 
   _onProgress(data) {
-    if (!this.state.videoReady) {
+    if (!this.state.videoLoaded) {
       this.setState({
-        videoReady: true
+        videoLoaded: true
       })
     }
 
     var duration = data.playableDuration
     var currentTime = data.currentTime
     var percent = Number((currentTime / duration).toFixed(2))
-
-    this.setState({
+    
+    var newState = {
       videoTotal: duration,
       currentTime: Number(data.currentTime.toFixed(2)),
       videoProgress: percent
-    })
+    }
+
+    if (!this.state.videoLoaded) {
+      newState.videoLoaded = true
+    }
+
+    if (!this.state.playing) {
+      newState.playing = true
+    }
+
+    this.setState(newState)
   },
 
   _onEnd() {
     this.setState({
-      videoProgress: 1
+      videoProgress: 1,
+      playing: false
     })
   },
 
   _onError(e) {
     console.log(e)
     console.log('error')
+  },
+
+  _rePlay() {
+    this.refs.videoPlayer.seek(0)
   },
 
   render: function() {
@@ -98,7 +115,17 @@ var Detail = React.createClass({
             onError={this._onError} />
 
           {
-            !this.state.videoReady && <ActivityIndicatorIOS color='#ee735c' style={styles.loading} />
+            !this.state.videoLoaded && <ActivityIndicatorIOS color='#ee735c' style={styles.loading} />
+          }
+
+          {
+            this.state.videoLoaded && !this.state.playing
+            ? <Icon
+                onPress={this._rePlay}
+                name='ios-play'
+                size={48}
+                style={styles.playIcon} />
+            : null
           }
 
           <View style={styles.progressBox}>
@@ -146,6 +173,21 @@ var styles = StyleSheet.create({
     width: 1,
     height: 2,
     backgroundColor: '#ff6600'
+  },
+
+  playIcon: {
+    position: 'absolute',
+    top: 140,
+    left: width / 2 - 30,
+    width: 60,
+    height: 60,
+    paddingTop: 8,
+    paddingLeft: 22,
+    backgroundColor: 'transparent',
+    borderColor: '#fff',
+    borderWidth: 1,
+    borderRadius: 30,
+    color: '#ed7b66'
   }
 });
 
