@@ -8,6 +8,7 @@ var Text = React.Text
 var View = React.View
 var StyleSheet = React.StyleSheet
 var Dimensions = React.Dimensions
+var ActivityIndicatorIOS = React.ActivityIndicatorIOS
 
 var width = Dimensions.get('window').width
 
@@ -17,6 +18,11 @@ var Detail = React.createClass({
 
     return {
       data: data,
+
+      videoReady: false,
+      videoProgress: 0.01,
+      videoTotal: 0,
+      currentTime: 0,
 
       rate: 1,
       muted: true,
@@ -39,12 +45,27 @@ var Detail = React.createClass({
   },
 
   _onProgress(data) {
-    console.log(data)
-    console.log('progress')
+    if (!this.state.videoReady) {
+      this.setState({
+        videoReady: true
+      })
+    }
+
+    var duration = data.playableDuration
+    var currentTime = data.currentTime
+    var percent = Number((currentTime / duration).toFixed(2))
+
+    this.setState({
+      videoTotal: duration,
+      currentTime: Number(data.currentTime.toFixed(2)),
+      videoProgress: percent
+    })
   },
 
   _onEnd() {
-    console.log('end')
+    this.setState({
+      videoProgress: 1
+    })
   },
 
   _onError(e) {
@@ -75,6 +96,14 @@ var Detail = React.createClass({
             onProgress={this._onProgress}
             onEnd={this._onEnd}
             onError={this._onError} />
+
+          {
+            !this.state.videoReady && <ActivityIndicatorIOS color='#ee735c' style={styles.loading} />
+          }
+
+          <View style={styles.progressBox}>
+            <View style={[styles.progressBar, {width: width * this.state.videoProgress}]}></View>
+          </View>
         </View>
       </View>
     )
@@ -84,8 +113,6 @@ var Detail = React.createClass({
 var styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 
   videoBox: {
@@ -98,6 +125,27 @@ var styles = StyleSheet.create({
     width: width,
     height: 360,
     backgroundColor: '#000',
+  },
+
+  loading: {
+    position: 'absolute',
+    left: 0,
+    top: 140,
+    width: width,
+    alignSelf: 'center',
+    backgroundColor: 'transparent',
+  },
+
+  progressBox: {
+    width: width,
+    height: 2,
+    backgroundColor: '#ccc'
+  },
+
+  progressBar: {
+    width: 1,
+    height: 2,
+    backgroundColor: '#ff6600'
   }
 });
 
