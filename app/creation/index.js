@@ -101,6 +101,8 @@ var Item = React.createClass({
     )
   }
 })
+      
+// ***************************** 上面是一个类 *********************************
 
 var List = React.createClass({
   getInitialState: function() {
@@ -223,7 +225,7 @@ var List = React.createClass({
       name: 'detail',
       component: Detail,
       params: {
-        row: row
+        data: row
       }
     })
   },
