@@ -23,6 +23,7 @@ var Detail = React.createClass({
       videoLoaded: false,
       paused: false,
       playing: false,
+      videoOk: true,
 
       videoProgress: 0.01,
       videoTotal: 0,
@@ -84,8 +85,9 @@ var Detail = React.createClass({
   },
 
   _onError(e) {
-    console.log(e)
-    console.log('error')
+    this.setState({
+      videoOk: false
+    })
   },
 
   _rePlay() {
@@ -131,6 +133,10 @@ var Detail = React.createClass({
             onProgress={this._onProgress}
             onEnd={this._onEnd}
             onError={this._onError} />
+
+          {
+            !this.state.videoOk && <Text style={styles.failText}>视频出错了！很抱歉</Text>
+          }
 
           {
             !this.state.videoLoaded && <ActivityIndicatorIOS color='#ee735c' style={styles.loading} />
@@ -182,6 +188,16 @@ var styles = StyleSheet.create({
     width: width,
     height: 360,
     backgroundColor: '#000',
+  },
+
+  failText: {
+    position: 'absolute',
+    left: 0,
+    top: 180,
+    width: width,
+    textAlign: 'center',
+    color: '#fff',
+    backgroundColor: 'transparent',
   },
 
   loading: {
