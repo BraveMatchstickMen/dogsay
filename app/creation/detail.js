@@ -37,7 +37,7 @@ var Detail = React.createClass({
     }
   },
 
-  _backToList() {
+  _pop() {
     this.props.navigator.pop()
   },
 
@@ -115,7 +115,14 @@ var Detail = React.createClass({
 
     return (
       <View style={styles.container}>
-        <Text onPress={this._backToList}>Detail Page</Text>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBox} onPress={this._pop}>
+            <Icon name='ios-arrow-back' style={styles.backIcon} />
+            <Text style={styles.backText}>返回</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle} numberOflines={1}>
+            视频详情页</Text>
+        </View>
         <View style={styles.videoBox}>
           <Video
             ref='videoPlayer'
@@ -176,6 +183,44 @@ var Detail = React.createClass({
 var styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+
+  header:{
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: width,
+    height: 64,
+    paddingTop: 20,
+    paddingLeft: 10,
+    paddingRight: 10,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: '#fff'
+  },
+
+  backBox: {
+    position: 'absolute',
+    left: 12,
+    top: 32,
+    width: 50,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+
+  headerTitle: {
+    width: width - 120,
+    textAlign: 'center'
+  },
+
+  backIcon: {
+    color: '#999',
+    fontSize: 20,
+    marginRight: 5
+  },
+
+  backText: {
+    color: '#999'
   },
 
   videoBox: {
