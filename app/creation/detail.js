@@ -9,6 +9,7 @@ var View = React.View
 var StyleSheet = React.StyleSheet
 var Dimensions = React.Dimensions
 var ActivityIndicatorIOS = React.ActivityIndicatorIOS
+var TouchableOpacity = React.TouchableOpacity
 
 var width = Dimensions.get('window').width
 
@@ -20,6 +21,7 @@ var Detail = React.createClass({
       data: data,
 
       videoLoaded: false,
+      paused: false,
       playing: false,
 
       videoProgress: 0.01,
@@ -90,6 +92,22 @@ var Detail = React.createClass({
     this.refs.videoPlayer.seek(0)
   },
 
+  _pause() {
+    if (!this.state.paused) {
+      this.setState({
+      paused: true
+    })
+    }
+  },
+
+  _resume() {
+    if (this.state.paused) {
+      this.setState({
+      paused: false
+    })
+    }
+  },
+
   render: function() {
     var data = this.props.data
 
@@ -102,7 +120,7 @@ var Detail = React.createClass({
             source={{uri: data.video}}
             style={styles.video}
             volume={5}
-            paused={false}
+            paused={this.state.paused}
             rate={this.state.rate}
             muted={this.state.muted}
             resizeMode={this.state.resizeMode}
@@ -125,6 +143,18 @@ var Detail = React.createClass({
                 name='ios-play'
                 size={48}
                 style={styles.playIcon} />
+            : null
+          }
+
+          {
+            this.state.videoLoaded && this.state.playing
+            ? <TouchableOpacity onPress={this._pause} style={styles.pauseBtn}>
+              {
+                this.state.paused
+                ? <Icon onPress={this._resume} size={48} name='ios-play' style={styles.resumeIcon} />
+                : <Text></Text>
+              }
+            </TouchableOpacity>
             : null
           }
 
@@ -176,6 +206,29 @@ var styles = StyleSheet.create({
   },
 
   playIcon: {
+    position: 'absolute',
+    top: 140,
+    left: width / 2 - 30,
+    width: 60,
+    height: 60,
+    paddingTop: 8,
+    paddingLeft: 22,
+    backgroundColor: 'transparent',
+    borderColor: '#fff',
+    borderWidth: 1,
+    borderRadius: 30,
+    color: '#ed7b66'
+  },
+
+  pauseBtn: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: width,
+    height: 360
+  },
+
+  resumeIcon: {
     position: 'absolute',
     top: 140,
     left: width / 2 - 30,
