@@ -10,6 +10,8 @@ var StyleSheet = React.StyleSheet
 var Dimensions = React.Dimensions
 var ActivityIndicatorIOS = React.ActivityIndicatorIOS
 var TouchableOpacity = React.TouchableOpacity
+var ScrollView = React.ScrollView
+var Image = React.Image
 
 var width = Dimensions.get('window').width
 
@@ -175,6 +177,20 @@ var Detail = React.createClass({
             <View style={[styles.progressBar, {width: width * this.state.videoProgress}]}></View>
           </View>
         </View>
+        
+        <ScrollView
+          enableEmptySections={true}
+          showsVerticalScrollIndicator={false}
+          automaticallyAdjustContentInsets={false}
+          style={styles.scrollView}>
+          <View style={styles.infoBox}>
+            <Image style={styles.avatar} source={{uri: data.author.avatar}} />
+            <View style={styles.descBox}>
+              <Text style={styles.nickname}>{data.author.nickname}</Text>
+              <Text style={styles.title}>{data.title}</Text>
+            </View>
+          </View>
+        </ScrollView>
       </View>
     )
   }
@@ -302,6 +318,35 @@ var styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 30,
     color: '#ed7b66'
+  },
+
+  infoBox: {
+    width: width,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10
+  },
+
+  avatar: {
+    width: 60,
+    height: 60,
+    marginRight: 10,
+    marginLeft: 10,
+    borderRadius: 30
+  },
+
+  descBox: {
+    flex: 1
+  },
+
+  nickname: {
+    fontSize: 18
+  },
+
+  title: {
+    marginTop: 8,
+    fontSize: 16,
+    color: '#666'
   }
 });
 
