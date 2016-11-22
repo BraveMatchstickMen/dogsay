@@ -12,7 +12,6 @@ var StyleSheet = React.StyleSheet
 var Dimensions = React.Dimensions
 var ActivityIndicatorIOS = React.ActivityIndicatorIOS
 var TouchableOpacity = React.TouchableOpacity
-var ScrollView = React.ScrollView
 var Image = React.Image
 var ListView = React.ListView
 
@@ -31,20 +30,22 @@ var Detail = React.createClass({
 
     return {
       data: data,
-      dataSource: ds.cloneWithRows([]),
 
+      // comments
+      dataSource: ds.cloneWithRows([]),
+      
+      // video loads
       videoLoaded: false,
       paused: false,
       playing: false,
       videoOk: true,
-
       videoProgress: 0.01,
       videoTotal: 0,
       currentTime: 0,
-
+      
+      // video player
       rate: 1,
       muted: true,
-
       resizeMode: 'contain',
       repeat: false,
     }
@@ -136,7 +137,7 @@ var Detail = React.createClass({
 
     request.get(config.api.base + config.api.comment, {
       accessToken: 'abcdef',
-      id: 124,
+      creation: 124,
       page: page
     })
     .then((data) => {
@@ -148,12 +149,10 @@ var Detail = React.createClass({
         cachedResults.items = items
         cachedResults.total = data.total
 
-        setTimeout(function() {            
-          that.setState({
-            isLoadingTail: false,
-            dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
-          })
-        }, 20)
+        that.setState({
+          isLoadingTail: false,
+          dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
+        })
       }
     })
     .catch((error) => {
@@ -197,6 +196,20 @@ var Detail = React.createClass({
         <View style={styles.reply}>
           <Text style={styles.replyNickname}>{row.replyBy.nickname}</Text>
           <Text style={styles.replyContent}>{row.content}</Text>
+        </View>
+      </View>
+    )
+  },
+
+  _renderHeader() {
+    var data = this.state.data
+
+    return (
+      <View style={styles.infoBox}>
+        <Image style={styles.avatar} source={{uri: data.author.avatar}} />
+        <View style={styles.descBox}>
+          <Text style={styles.nickname}>{data.author.nickname}</Text>
+          <Text style={styles.title}>{data.title}</Text>
         </View>
       </View>
     )
@@ -268,30 +281,17 @@ var Detail = React.createClass({
           </View>
         </View>
         
-        <ScrollView
+        <ListView
+          dataSource={this.state.dataSource}
+          renderRow={this._renderRow}
+          renderHeader={this._renderHeader}
+          renderFooter={this._renderFooter}
+          onEndReached={this._fetchMoreData}
+          onEndReachedThreshold={20}
           enableEmptySections={true}
           showsVerticalScrollIndicator={false}
-          automaticallyAdjustContentInsets={false}
-          style={styles.scrollView}>
-          <View style={styles.infoBox}>
-            <Image style={styles.avatar} source={{uri: data.author.avatar}} />
-            <View style={styles.descBox}>
-              <Text style={styles.nickname}>{data.author.nickname}</Text>
-              <Text style={styles.title}>{data.title}</Text>
-            </View>
-          </View>
-
-          <ListView
-            dataSource={this.state.dataSource}
-            renderRow={this._renderRow}
-            renderFooter={this._renderFooter}
-            onEndReached={this._fetchMoreData}
-            onEndReachedThreshold={20}
-            enableEmptySections={true}
-            showsVerticalScrollIndicator={false}
-            automaticallyAdjustContentInsets={false} 
-          />
-        </ScrollView>
+          automaticallyAdjustContentInsets={false} 
+        />
       </View>
     )
   }
@@ -385,7 +385,7 @@ var styles = StyleSheet.create({
 
   playIcon: {
     position: 'absolute',
-    top: 90,
+    top: 80,
     left: width / 2 - 30,
     width: 60,
     height: 60,
