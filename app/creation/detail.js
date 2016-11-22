@@ -3,6 +3,7 @@
 var React = require('react-native')
 var Icon = require('react-native-vector-icons/Ionicons')
 var Video = require('react-native-video').default
+var Button = require('react-native-button').default
 var config = require('../common/config')
 var request = require('../common/request')
 
@@ -16,6 +17,7 @@ var Image = React.Image
 var ListView = React.ListView
 var TextInput = React.TextInput
 var Modal = React.Modal
+var AlertIOS = React.AlertIOS
 
 var width = Dimensions.get('window').width
 
@@ -46,8 +48,10 @@ var Detail = React.createClass({
       currentTime: 0,
 
       // modal
+      content: '',
       animationType: 'none',
       modalVisible: false,
+      isSending: false,
 
       // video player
       rate: 1,
@@ -255,6 +259,63 @@ var Detail = React.createClass({
     )
   },
 
+  _submit() {
+    var that = this
+
+    if (!this.state.content) {
+      return AlertIOS.alert('留言不能为空！')
+    }
+
+    if (this.state.isSending) {
+      return AlertIOS.alert('正在评论中！')
+    }
+
+    this.setState({
+      isSending: true
+    }, function() {
+      var body = {
+        accessToken: 'abc',
+        creation: '1234',
+        content: this.state.content
+      }
+
+      var url = config.api.base + config.api.comment
+
+      request.post(url, body)
+        .then(function(data) {
+          if (data && data.success) {
+            var items = cachedResults.items.slice()
+
+            items = [{
+              content: that.state.content,
+              replyBy: {
+                avatar: 'https://bestswifter.com/content/images/2016/01/avator.jpg',
+                nickname: '狗狗狗说'
+              }
+            }].concat(items)
+
+            cachedResults.items = items
+            cachedResults.total = cachedResults.total + 1
+
+            that.setState({
+              isSending: false,
+              dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
+            })
+
+            that._setModalVisible(false)
+          }
+        })
+        .catch((err) => {
+          console.log(err)
+          that.setState({
+            isSending: false
+          })
+          that._setModalVisible(false)
+          AlertIOS.alert('留言失败，请稍后重试')
+        })
+    })
+  },
+
   render: function() {
     var data = this.props.data
 
@@ -360,7 +421,8 @@ var Detail = React.createClass({
                 />
               </View>
             </View>
-
+          
+            <Button style={styles.submitBtn} onPress={this._submit}>评论</Button>
           </View>
         </Modal>
       </View>
@@ -383,6 +445,19 @@ var styles = StyleSheet.create({
     alignSelf: 'center',
     fontSize: 30,
     color: '#ee753c'
+  },
+
+  submitBtn: {
+    width: width - 20,
+    padding: 16,
+    paddingLeft: 20,
+    marginTop: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#ee753c',
+    borderRadius: 4,
+    color: '#ee753c',
+    fontSize: 18
   },
 
   header:{
