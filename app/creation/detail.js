@@ -18,6 +18,12 @@ var ListView = React.ListView
 
 var width = Dimensions.get('window').width
 
+var cachedResults = {
+  nextPage: 1,
+  items: [],
+  total: 0
+}
+
 var Detail = React.createClass({
   getInitialState() {
     var data = this.props.data
@@ -121,29 +127,67 @@ var Detail = React.createClass({
     this._fetchData()
   },
 
-  _fetchData() {
+  _fetchData: function (page){
     var that = this
-    var url = config.api.base + config.api.comment
-
-    request.get(url, {
-      id: 124,
-      accessToken: '123a'
+    
+    this.setState({
+        isLoadingTail: true
     })
-    .then(function(data) {
-      if (data && data.success) {
-        var comments = data.data
 
-        if (comments && comments.length > 0) {
+    request.get(config.api.base + config.api.comment, {
+      accessToken: 'abcdef',
+      id: 124,
+      page: page
+    })
+    .then((data) => {
+      if(data.success) {
+        var items = cachedResults.items.slice()
+
+        items = items.concat(data.data)
+        cachedResults.nextPage += 1
+        cachedResults.items = items
+        cachedResults.total = data.total
+
+        setTimeout(function() {            
           that.setState({
-            comments: comments,
-            dataSource: that.state.dataSource.cloneWithRows(comments)
+            isLoadingTail: false,
+            dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
           })
-        }
+        }, 20)
       }
     })
     .catch((error) => {
-      console.log(error)
-    })
+      this.setState({
+        isLoadingTail: false
+      })
+    });
+  },
+
+  _hasMore() {
+    return cachedResults.items.length !== cachedResults.total
+  },
+
+  _fetchMoreData() {
+    if (!this._hasMore() || this.state.isLoadingTail) {
+      return
+    }
+    var page = cachedResults.nextPage
+    this._fetchData(page)
+  },
+
+  _renderFooter() {
+    if (!this._hasMore() && cachedResults.total !== 0) {
+      return (
+        <View style={styles.loadingMore}>
+          <Text style={styles.loadingText}>没有更多了</Text>
+        </View>
+      )
+    }
+    if (!this.state.isLoadingTail) {
+      return <View style={styles.loadingMore} />
+    }
+
+    return <ActivityIndicatorIOS style={styles.loadingMore} />
   },
 
   _renderRow(row) {
@@ -238,12 +282,15 @@ var Detail = React.createClass({
           </View>
 
           <ListView
-          dataSource={this.state.dataSource}
-          renderRow={this._renderRow}
-          enableEmptySections={true}
-          showsVerticalScrollIndicator={false}
-          automaticallyAdjustContentInsets={false} 
-        />
+            dataSource={this.state.dataSource}
+            renderRow={this._renderRow}
+            renderFooter={this._renderFooter}
+            onEndReached={this._fetchMoreData}
+            onEndReachedThreshold={20}
+            enableEmptySections={true}
+            showsVerticalScrollIndicator={false}
+            automaticallyAdjustContentInsets={false} 
+          />
         </ScrollView>
       </View>
     )
@@ -428,6 +475,15 @@ var styles = StyleSheet.create({
 
   reply: {
     flex: 1
+  },
+
+  loadingMore: {
+    marginVertical: 20
+  },
+
+  loadingText: {
+    color: '#777',
+    textAlign: 'center'
   }
 });
 
