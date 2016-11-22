@@ -14,6 +14,8 @@ var ActivityIndicatorIOS = React.ActivityIndicatorIOS
 var TouchableOpacity = React.TouchableOpacity
 var Image = React.Image
 var ListView = React.ListView
+var TextInput = React.TextInput
+var Modal = React.Modal
 
 var width = Dimensions.get('window').width
 
@@ -42,7 +44,11 @@ var Detail = React.createClass({
       videoProgress: 0.01,
       videoTotal: 0,
       currentTime: 0,
-      
+
+      // modal
+      animationType: 'none',
+      modalVisible: false,
+
       // video player
       rate: 1,
       muted: true,
@@ -111,16 +117,16 @@ var Detail = React.createClass({
   _pause() {
     if (!this.state.paused) {
       this.setState({
-      paused: true
-    })
+        paused: true
+      })
     }
   },
 
   _resume() {
     if (this.state.paused) {
       this.setState({
-      paused: false
-    })
+        paused: false
+      })
     }
   },
 
@@ -201,15 +207,49 @@ var Detail = React.createClass({
     )
   },
 
+  _focus() {
+    this._setModalVisible(true)
+  },
+
+  _blur() {
+
+  },
+
+  _closeModal() {
+    this._setModalVisible(false)
+  },
+
+  _setModalVisible(isVisible) {
+    this.setState({
+      modalVisible: isVisible
+    })
+  },
+
   _renderHeader() {
     var data = this.state.data
 
     return (
-      <View style={styles.infoBox}>
-        <Image style={styles.avatar} source={{uri: data.author.avatar}} />
-        <View style={styles.descBox}>
-          <Text style={styles.nickname}>{data.author.nickname}</Text>
-          <Text style={styles.title}>{data.title}</Text>
+      <View style={styles.listHeader}>
+        <View style={styles.infoBox}>
+          <Image style={styles.avatar} source={{uri: data.author.avatar}} />
+          <View style={styles.descBox}>
+            <Text style={styles.nickname}>{data.author.nickname}</Text>
+            <Text style={styles.title}>{data.title}</Text>
+          </View>
+        </View>
+        <View style={styles.commentBox}>
+          <View style={styles.comment}>
+            <TextInput
+              placeholder='敢不敢评论一个。。。'
+              style={styles.content}
+              multiline={true}
+              onFocus={this._focus}
+            />
+          </View>
+        </View>
+
+        <View style={styles.commentArea}>
+          <Text style={styles.commentTitle}>精彩评论</Text>
         </View>
       </View>
     )
@@ -292,6 +332,37 @@ var Detail = React.createClass({
           showsVerticalScrollIndicator={false}
           automaticallyAdjustContentInsets={false} 
         />
+
+        <Modal
+          animationType={'fade'}
+          visible={this.state.modalVisible}
+          onRequestClose={() => {this._setModalVisible(false)}}>
+          <View style={styles.modalContainer}>
+            <Icon
+              onPress={this._closeModal}
+              name='ios-close-outline'
+              style={styles.closeIcon} />
+
+            <View style={styles.commentBox}>
+              <View style={styles.comment}>
+                <TextInput
+                  placeholder='敢不敢评论一个。。。'
+                  style={styles.content}
+                  multiline={true}
+                  onFocus={this._focus}
+                  onBlur={this._blur}
+                  defaultValue={this.content}
+                  onChangeText={(text) => {
+                    this.setState({
+                      content: text
+                    })
+                  }}
+                />
+              </View>
+            </View>
+
+          </View>
+        </Modal>
       </View>
     )
   }
@@ -300,6 +371,18 @@ var Detail = React.createClass({
 var styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+
+  modalContainer: {
+    flex: 1,
+    paddingTop: 45,
+    backgroundColor: '#fff'
+  },
+
+  closeIcon: {
+    alignSelf: 'center',
+    fontSize: 30,
+    color: '#ee753c'
   },
 
   header:{
@@ -484,6 +567,37 @@ var styles = StyleSheet.create({
   loadingText: {
     color: '#777',
     textAlign: 'center'
+  },
+
+  listHeader: {
+    width: width,
+    marginTop: 10
+  },
+
+  commentBox: {
+    marginTop: 10,
+    marginBottom: 10,
+    padding: 8,
+    width: width
+  },
+
+  content: {
+    paddingLeft: 2,
+    color: '#333',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    fontSize: 14,
+    height: 80
+  },
+
+  commentArea: {
+    width: width,
+    paddingBottom: 6,
+    paddingLeft: 10,
+    paddingRight: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee'
   }
 });
 
