@@ -3,6 +3,8 @@
 var React = require('react-native')
 var Icon = require('react-native-vector-icons/Ionicons')
 var Video = require('react-native-video').default
+var config = require('../common/config')
+var request = require('../common/request')
 
 var Text = React.Text
 var View = React.View
@@ -12,15 +14,18 @@ var ActivityIndicatorIOS = React.ActivityIndicatorIOS
 var TouchableOpacity = React.TouchableOpacity
 var ScrollView = React.ScrollView
 var Image = React.Image
+var ListView = React.ListView
 
 var width = Dimensions.get('window').width
 
 var Detail = React.createClass({
   getInitialState() {
     var data = this.props.data
+    var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
 
     return {
       data: data,
+      dataSource: ds.cloneWithRows([]),
 
       videoLoaded: false,
       paused: false,
@@ -112,6 +117,47 @@ var Detail = React.createClass({
     }
   },
 
+  componentDidMount() {
+    this._fetchData()
+  },
+
+  _fetchData() {
+    var that = this
+    var url = config.api.base + config.api.comment
+
+    request.get(url, {
+      id: 124,
+      accessToken: '123a'
+    })
+    .then(function(data) {
+      if (data && data.success) {
+        var comments = data.data
+
+        if (comments && comments.length > 0) {
+          that.setState({
+            comments: comments,
+            dataSource: that.state.dataSource.cloneWithRows(comments)
+          })
+        }
+      }
+    })
+    .catch((error) => {
+      console.log(error)
+    })
+  },
+
+  _renderRow(row) {
+    return (
+      <View key={row._id} style={styles.replyBox}>
+        <Image style={styles.replyAvatar} source={{uri: row.replyBy.avatar}} />
+        <View style={styles.reply}>
+          <Text style={styles.replyNickname}>{row.replyBy.nickname}</Text>
+          <Text style={styles.replyContent}>{row.content}</Text>
+        </View>
+      </View>
+    )
+  },
+
   render: function() {
     var data = this.props.data
 
@@ -190,6 +236,14 @@ var Detail = React.createClass({
               <Text style={styles.title}>{data.title}</Text>
             </View>
           </View>
+
+          <ListView
+          dataSource={this.state.dataSource}
+          renderRow={this._renderRow}
+          enableEmptySections={true}
+          showsVerticalScrollIndicator={false}
+          automaticallyAdjustContentInsets={false} 
+        />
         </ScrollView>
       </View>
     )
@@ -241,20 +295,20 @@ var styles = StyleSheet.create({
 
   videoBox: {
     width: width,
-    height: 360,
+    height: width * 0.56,
     backgroundColor: '#000',
   },
 
   video: {
     width: width,
-    height: 360,
+    height: width * 0.56,
     backgroundColor: '#000',
   },
 
   failText: {
     position: 'absolute',
     left: 0,
-    top: 180,
+    top: 90,
     width: width,
     textAlign: 'center',
     color: '#fff',
@@ -264,7 +318,7 @@ var styles = StyleSheet.create({
   loading: {
     position: 'absolute',
     left: 0,
-    top: 140,
+    top: 80,
     width: width,
     alignSelf: 'center',
     backgroundColor: 'transparent',
@@ -284,7 +338,7 @@ var styles = StyleSheet.create({
 
   playIcon: {
     position: 'absolute',
-    top: 140,
+    top: 90,
     left: width / 2 - 30,
     width: 60,
     height: 60,
@@ -307,7 +361,7 @@ var styles = StyleSheet.create({
 
   resumeIcon: {
     position: 'absolute',
-    top: 140,
+    top: 80,
     left: width / 2 - 30,
     width: 60,
     height: 60,
@@ -347,6 +401,33 @@ var styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 16,
     color: '#666'
+  },
+
+  replyBox: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    marginTop: 10
+  },
+
+  replyAvatar: {
+    width: 40,
+    height: 40,
+    marginRight: 10,
+    marginLeft: 10,
+    borderRadius: 20
+  },
+
+  replyNickname: {
+    color: '#666'
+  },
+
+  replyContent: {
+    marginTop: 4,
+    color: '#666'
+  },
+
+  reply: {
+    flex: 1
   }
 });
 
