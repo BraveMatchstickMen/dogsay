@@ -1,8 +1,8 @@
 'use strict';
 
 var React = require('react-native')
-var Icon = require('react-native-vector-icons/Ionicons')
 var Button = require('react-native-button').default
+var CountDown = require('react-native-sk-countdown').CountDownText
 
 var request = require('../common/request')
 var config = require('../common/config')
@@ -56,6 +56,37 @@ var Login = React.createClass({
       })
   },
 
+  _submit() {
+  	var that = this
+    var phoneNumber = this.state.phoneNumber
+    var verifycode = this.state.verifycode
+    
+    if (!phoneNumber) {
+    	return AlertIOS.alert('手机号或验证码不能为空！')
+    }
+
+    var body = {
+    	phoneNumber: phoneNumber,
+    	verifycode: verifycode
+    }
+
+    var verifyURL = config.api.base + config.api.verify
+
+    request.post(verifyURL, body)
+      .then((data) => {
+      	if (data && data.success) {
+      		console.log('login ok')
+      		console.log(data)
+      	}
+      	else {
+      		AlertIOS.alert('登录失败，请检查手机号或验证码是否正确')
+      	}
+      })
+      .catch((err) => {
+      	AlertIOS.alert('登录失败，请检查网络是否良好')
+      })
+  },
+
   render: function() {
     return (
 	  <View style={styles.container}>
@@ -89,6 +120,24 @@ var Login = React.createClass({
 	      	      	})
 	      	      }}
 	      	    />
+
+	      	    {
+	      	      this.state.countingDone
+	      	      ? <Button
+	      	          style={styles.countBtn}
+	      	          onPress={this._sendVerifyCode}>获取验证码</Button>
+	      	      : <CountDown
+	      	          style={styles.countBtn}
+				            countType='seconds' // 计时类型：seconds / date
+				            auto={true} // 自动开始
+				            afterEnd={this._countingDone} // 结束回调
+				            timeLeft={60} // 正向计时 时间起点为0秒
+				            step={-1} // 计时步长，以秒为单位，正数则为正计时，负数为倒计时
+				            startText='获取验证码' // 开始的文本
+				            endText='获取验证码' // 结束的文本
+				            intervalText={(sec) => '剩余秒数:' + sec} // 定时的文本回调
+				          />
+	      	    }
 	      	  </View>
 	      	: null
 	      }
@@ -134,8 +183,30 @@ var styles = StyleSheet.create({
   	borderRadius: 4
   },
 
+  verifyCodeBox: {
+  	marginTop: 10,
+  	flexDirection: 'row',
+  	justifyContent: 'space-between'
+  },
+
+  countBtn: {
+  	width: 120,
+  	height: 40,
+  	padding: 10,
+  	marginLeft: 8,
+  	backgroundColor: '#ee735c',
+  	color: '#fff',
+  	borderColor: '#ee735c',
+  	textAlign: 'center',
+  	fontWeight: '600',
+  	fontSize: 15,
+  	borderRadius: 4,
+  },
+
   btn: {
   	marginTop: 10,
+  	marginLeft: 10,
+  	marginRight: 10,
   	padding: 10,
   	backgroundColor: 'transparent',
   	borderColor: '#ee735c',
