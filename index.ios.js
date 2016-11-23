@@ -69,7 +69,7 @@ var dogsay = React.createClass({
 
   render: function() {
     if (!this.state.logined) {
-      return <Login afterLogin={this._afterLogin}/>
+      return <Login afterLogin={this._afterLogin} />
     }
 
     return (
@@ -119,7 +119,7 @@ var dogsay = React.createClass({
               selectedTab: 'account',
             });
           }}>
-          <Login />
+          <Account />
         </Icon.TabBarItem>
       </TabBarIOS>
     );
