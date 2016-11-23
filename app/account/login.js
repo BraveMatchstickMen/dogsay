@@ -75,14 +75,14 @@ var Login = React.createClass({
     request.post(verifyURL, body)
       .then((data) => {
       	if (data && data.success) {
-      		console.log('login ok')
-      		console.log(data)
+      		that.props.afterLogin(data.data)
       	}
       	else {
       		AlertIOS.alert('登录失败，请检查手机号或验证码是否正确')
       	}
       })
       .catch((err) => {
+      	console.log(err)
       	AlertIOS.alert('登录失败，请检查网络是否良好')
       })
   },

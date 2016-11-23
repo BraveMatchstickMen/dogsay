@@ -5,6 +5,7 @@ var Icon = require('react-native-vector-icons/Ionicons')
 
 var List = require('./app/creation/index')
 var Edit = require('./app/edit/index')
+var Account = require('./app/account/index')
 var Login = require('./app/account/login')
 
 var AppRegistry = React.AppRegistry
@@ -13,16 +14,64 @@ var Text = React.Text
 var View = React.View
 var StyleSheet = React.StyleSheet
 var Navigator = React.Navigator
+var AsyncStorage = React.AsyncStorage
 
 var dogsay = React.createClass({
 
   getInitialState: function() {
     return {
+      user: null,
+      logined: false,
       selectedTab: 'list',
     };
   },
 
+  componentDidMount() {
+    this._asyncAppStatus()
+  },
+
+  _asyncAppStatus() {
+    var that = this
+    AsyncStorage.getItem('user')
+      .then((data) => {
+        var user
+        var newState = {}
+
+        if (data) {
+          user = JSON.parse(data)
+        }
+
+        if (user && user.accessToken) {
+          newState.user = user
+          newState.logined = true
+        }
+        else {
+          newState.logined = false
+        }
+
+        that.setState(newState)
+      })
+  },
+
+  _afterLogin(user) {
+    var that = this
+
+    user = JSON.stringify(user)
+
+    AsyncStorage.setItem('user', user)
+      .then(() => {
+        that.setState({
+          logined: true,
+          user: user
+        })
+      })
+  },
+
   render: function() {
+    if (!this.state.logined) {
+      return <Login afterLogin={this._afterLogin}/>
+    }
+
     return (
       <TabBarIOS tintColor="#ee735c">
         <Icon.TabBarItem
@@ -64,10 +113,10 @@ var dogsay = React.createClass({
           iconName='ios-more-outline'
           selectedIconName='ios-more'
           renderAsOriginal
-          selected={this.state.selectedTab === 'login'}
+          selected={this.state.selectedTab === 'account'}
           onPress={() => {
             this.setState({
-              selectedTab: 'login',
+              selectedTab: 'account',
             });
           }}>
           <Login />
