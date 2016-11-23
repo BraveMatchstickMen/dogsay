@@ -5,7 +5,7 @@ var Icon = require('react-native-vector-icons/Ionicons')
 
 var List = require('./app/creation/index')
 var Edit = require('./app/edit/index')
-var Account = require('./app/account/index')
+var Login = require('./app/account/login')
 
 var AppRegistry = React.AppRegistry
 var TabBarIOS = React.TabBarIOS
@@ -64,13 +64,13 @@ var dogsay = React.createClass({
           iconName='ios-more-outline'
           selectedIconName='ios-more'
           renderAsOriginal
-          selected={this.state.selectedTab === 'account'}
+          selected={this.state.selectedTab === 'login'}
           onPress={() => {
             this.setState({
-              selectedTab: 'account',
+              selectedTab: 'login',
             });
           }}>
-          <Account />
+          <Login />
         </Icon.TabBarItem>
       </TabBarIOS>
     );

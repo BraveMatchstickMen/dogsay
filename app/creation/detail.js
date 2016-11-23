@@ -450,7 +450,6 @@ var styles = StyleSheet.create({
   submitBtn: {
     width: width - 20,
     padding: 16,
-    paddingLeft: 20,
     marginTop: 20,
     marginBottom: 20,
     borderWidth: 1,
