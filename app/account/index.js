@@ -2,15 +2,31 @@
 
 var React = require('react-native')
 var Icon = require('react-native-vector-icons/Ionicons')
+var ImagePicker = require('NativeModules').ImagePickerManager
 
 var Text = React.Text
 var View = React.View
 var StyleSheet = React.StyleSheet
 var Dimensions = React.Dimensions
-var width = Dimensions.get('window').width
 var AsyncStorage = React.AsyncStorage
 var TouchableOpacity = React.TouchableOpacity
 var Image = React.Image
+
+var width = Dimensions.get('window').width
+
+var photoOptions = {
+  title: '选择头像',
+  cancelButtonTitle: '取消',
+  takePhotoButtonTitle: '拍照',
+  chooseFromLibraryButtonTitle: '选择相册',
+  quality: 0.75,
+  allowsEditing: true,
+  noData: false,
+  storageOptions: {
+    skipBackup: true,
+    path: 'images'
+  }
+};
 
 var Account = React.createClass({
   getInitialState() {
@@ -28,6 +44,8 @@ var Account = React.createClass({
       .then((data) => {
         var user
 
+        console.log(data)
+
         if (data) {
           user = JSON.parse(data)
         }
@@ -40,6 +58,25 @@ var Account = React.createClass({
       })
   },
 
+  _pickPhoto() {
+    var that = this
+
+    ImagePicker.showImagePicker(photoOptions, (res) => {
+      if (res.didCancel) {
+        return
+      }
+
+      var avartarData = 'data:image/jpeg;base64,' + res.data
+      var user = that.state.user
+
+      user.avatar = avartarData
+
+      that.setState({
+        user: user
+      })
+    })
+  },
+
   render() {
     var user = this.state.user
 
@@ -50,8 +87,8 @@ var Account = React.createClass({
         </View>
 
         {
-          !user.avatar
-          ? <TouchableOpacity style={styles.avatarContainer}>
+          user.avatar
+          ? <TouchableOpacity onPress={this._pickPhoto} style={styles.avatarContainer}>
             <Image source={{uri: user.avatar}} style={styles.avatarContainer}>
               <View style={styles.avatarBox}>
                 <Image
@@ -61,14 +98,14 @@ var Account = React.createClass({
               <Text style={styles.avatarTip}>戳这里换头像</Text>
             </Image>
           </TouchableOpacity>
-          : <View style={styles.avatarContainer}>
+          : <TouchableOpacity onPress={this._pickPhoto} style={styles.avatarContainer}>
             <Text style={styles.avatarTip}>添加狗狗头像</Text>
-            <TouchableOpacity style={styles.avatarBox}>
+            <View style={styles.avatarBox}>
               <Icon
                 name='ios-cloud-upload-outline'
                 style={styles.plusIcon} />
-            </TouchableOpacity>
-          </View>
+            </View>
+          </TouchableOpacity>
         }
       </View>
     )
