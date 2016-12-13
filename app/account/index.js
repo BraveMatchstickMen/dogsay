@@ -4,6 +4,7 @@ var React = require('react-native')
 var sha1 = require('sha1')
 var Icon = require('react-native-vector-icons/Ionicons')
 var ImagePicker = require('NativeModules').ImagePickerManager
+var Progress = require('react-native-progress')
 
 var request = require('../common/request')
 var config = require('../common/config')
@@ -52,7 +53,9 @@ var Account = React.createClass({
     var user = this.props.user || {}
 
     return {
-      user: user
+      user: user,
+      avatarProgress: 0,
+      avatarUploading: false
     }
   },
 
@@ -141,6 +144,11 @@ var Account = React.createClass({
 
     console.log(body)
 
+    this.setState({
+      avatarUploading: true,
+      avatarProgress: 0
+    })
+
     xhr.open('POST', url)
     xhr.onload = () => {
       if (xhr.status !== 200) {
@@ -172,8 +180,22 @@ var Account = React.createClass({
         user.avatar = avatar(response.public_id, 'image')
 
         that.setState({
+          avatarUploading: false,
+          avatarProgress: 0,
           user: user
         })
+      }
+    }
+
+    if (xhr.upload) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          var percent = Number((event.loaded / event.total).toFixed(2))
+
+          that.setState({
+            avatarProgress: percent
+          })
+        }
       }
     }
 
@@ -194,9 +216,17 @@ var Account = React.createClass({
           ? <TouchableOpacity onPress={this._pickPhoto} style={styles.avatarContainer}>
             <Image source={{uri: user.avatar}} style={styles.avatarContainer}>
               <View style={styles.avatarBox}>
-                <Image
-                  source={{uri: user.avatar}}
-                  style={styles.avatar} />
+                {
+                  this.state.avatarUploading
+                  ? <Progress.Circle 
+                      showsText={true}
+                      size={75}
+                      color={'#ee735c'}
+                      progress={this.state.avatarProgress} />
+                  : <Image
+                      source={{uri: user.avatar}}
+                      style={styles.avatar} />
+                }
               </View>
               <Text style={styles.avatarTip}>戳这里换头像</Text>
             </Image>
@@ -204,9 +234,17 @@ var Account = React.createClass({
           : <TouchableOpacity onPress={this._pickPhoto} style={styles.avatarContainer}>
             <Text style={styles.avatarTip}>添加狗狗头像</Text>
             <View style={styles.avatarBox}>
-              <Icon
-                name='ios-cloud-upload-outline'
-                style={styles.plusIcon} />
+              {
+                this.state.avatarUploading
+                ? <Progress.Circle 
+                    showsText={true}
+                    size={75}
+                    color={'#ee735c'}
+                    progress={this.state.avatarProgress} />
+                :<Icon
+                  name='ios-cloud-upload-outline'
+                  style={styles.plusIcon} />
+              }
             </View>
           </TouchableOpacity>
         }
