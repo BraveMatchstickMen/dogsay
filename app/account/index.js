@@ -1,8 +1,12 @@
 'use strict';
 
 var React = require('react-native')
+var sha1 = require('sha1')
 var Icon = require('react-native-vector-icons/Ionicons')
 var ImagePicker = require('NativeModules').ImagePickerManager
+
+var request = require('../common/request')
+var config = require('../common/config')
 
 var Text = React.Text
 var View = React.View
@@ -11,6 +15,7 @@ var Dimensions = React.Dimensions
 var AsyncStorage = React.AsyncStorage
 var TouchableOpacity = React.TouchableOpacity
 var Image = React.Image
+var AlertIOS = React.AlertIOS
 
 var width = Dimensions.get('window').width
 
@@ -27,6 +32,20 @@ var photoOptions = {
     path: 'images'
   }
 };
+
+var CLOUDINARY = {
+  cloud_name: 'db2oxpw9c',  
+  api_key: '329161736663398',  
+  api_secret: '4WjD8BOdL9sz3pJfjJwDR-TAY2U',
+  base: 'http://res.cloudinary.com/db2oxpw9c',
+  image: 'https://api.cloudinary.com/v1_1/db2oxpw9c/image/upload',
+  video: 'https://api.cloudinary.com/v1_1/db2oxpw9c/video/upload',
+  audio: 'https://api.cloudinary.com/v1_1/db2oxpw9c/raw/upload' 
+}
+
+function avatar(id, type) {
+  return CLOUDINARY.base + '/' + type + '/upload/' + id
+}
 
 var Account = React.createClass({
   getInitialState() {
@@ -67,14 +86,98 @@ var Account = React.createClass({
       }
 
       var avartarData = 'data:image/jpeg;base64,' + res.data
-      var user = that.state.user
+      // var user = that.state.user
 
-      user.avatar = avartarData
+      // user.avatar = avartarData
 
-      that.setState({
-        user: user
+      // that.setState({
+      //   user: user
+      // })
+
+      var timestamp = Date.now()
+      var tags = 'app,avatar'
+      var folder = 'avatar'
+      var signatureURL = config.api.base + config.api.signature
+      var accessToken = this.state.user.accessToken
+
+      request.post(signatureURL, {
+        accessToken: accessToken,
+        timestamp: timestamp,
+        folder: folder,
+        tags: tags,
+        type: 'avatar'
+      })
+      .catch((err) => {
+        console.log(err)
+      })
+      .then((data) => {
+        console.log(data)
+        if (data && data.success) {
+          var signature = 'folder=' + folder + '&tags=' + tags + '&timestamp=' + timestamp + CLOUDINARY.api_secret
+
+          signature = sha1(signature)
+
+          var body = new FormData()
+
+          body.append('folder', folder)
+          body.append('signature', signature)
+          body.append('tags', tags)
+          body.append('timestamp', timestamp)
+          body.append('api_key', CLOUDINARY.api_key)
+          body.append('resource_type', 'image')
+          body.append('file', avartarData)
+
+          that._upload(body)
+
+        }
       })
     })
+  },
+
+  _upload(body) {
+    var that = this
+    var xhr = new XMLHttpRequest()
+    var url = CLOUDINARY.image
+
+    console.log(body)
+
+    xhr.open('POST', url)
+    xhr.onload = () => {
+      if (xhr.status !== 200) {
+        AlertIOS.alert('请求失败')
+        console.log(xhr.responseText)
+
+        return
+      }
+
+      if (!xhr.responseText) {
+        AlertIOS.alert('请求失败')
+
+        return
+      }
+
+      var response
+
+      try {
+        response = JSON.parse(xhr.response)
+      }
+      catch(e) {
+        console.log(e)
+        console.log('parse fails')
+      }
+
+      if (response && response.public_id) {
+        var user = this.state.user
+
+        user.avatar = avatar(response.public_id, 'image')
+
+        that.setState({
+          user: user
+        })
+      }
+    }
+
+    xhr.send(body)
   },
 
   render() {
