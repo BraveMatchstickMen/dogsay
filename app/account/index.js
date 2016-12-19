@@ -17,6 +17,8 @@ var AsyncStorage = React.AsyncStorage
 var TouchableOpacity = React.TouchableOpacity
 var Image = React.Image
 var AlertIOS = React.AlertIOS
+var Modal = React.Modal
+var TextInput = React.TextInput
 
 var width = Dimensions.get('window').width
 
@@ -63,8 +65,21 @@ var Account = React.createClass({
     return {
       user: user,
       avatarProgress: 0,
-      avatarUploading: false
+      avatarUploading: false,
+      modalVisible: false
     }
+  },
+
+  _edit() {
+    this.setState({
+      modalVisible: true
+    })
+  },
+
+  _closeModal() {
+    this.setState({
+      modalVisible: false
+    })
   },
 
   componentDidMount() {
@@ -238,13 +253,24 @@ var Account = React.createClass({
     }
   },
 
+  _changeUserState(key, value) {
+    var user = this.state.user
+
+    user[key] = value
+
+    this.setState({
+      user: user
+    })
+  },
+
   render() {
     var user = this.state.user
 
     return (
       <View style={styles.container}>
         <View style={styles.toolbar}>
-          <Text style={styles.toolbarTitle}>我的账户</Text>
+          <Text style={styles.toolbarTitle}>狗狗的账户</Text>
+          <Text style={styles.toolbarExtra} onPress={this._edit}>编辑</Text>
         </View>
 
         {
@@ -284,6 +310,81 @@ var Account = React.createClass({
             </View>
           </TouchableOpacity>
         }
+
+        <Modal
+          animated={true}
+          visible={this.state.modalVisible}>
+          <View style={styles.modalContainer}>
+            <Icon
+              name='ios-close-outline'
+              onPress={this._closeModal}
+              style={styles.closeIcon} />
+
+            <View style={styles.fieldItem}>
+              <Text style={styles.label}>昵称</Text>
+              <TextInput
+                placeholder={'输入你的昵称'}
+                style={styles.inputField}
+                autoCapitalize={'none'}
+                autoCorrect={false}
+                defaultValue={user.nickname}
+                onChangeText={(text) => {
+                  this._changeUserState('nickname', text)
+                }}
+              />
+            </View>
+
+            <View style={styles.fieldItem}>
+              <Text style={styles.label}>品种</Text>
+              <TextInput
+                placeholder={'狗狗的品种'}
+                style={styles.inputField}
+                autoCapitalize={'none'}
+                autoCorrect={false}
+                defaultValue={user.breed}
+                onChangeText={(text) => {
+                  this._changeUserState('breed', text)
+                }}
+              />
+            </View>
+
+            <View style={styles.fieldItem}>
+              <Text style={styles.label}>年龄</Text>
+              <TextInput
+                placeholder={'狗狗的年龄'}
+                style={styles.inputField}
+                autoCapitalize={'none'}
+                autoCorrect={false}
+                defaultValue={user.age}
+                onChangeText={(text) => {
+                  this._changeUserState('age', text)
+                }}
+              />
+            </View>
+
+            <View style={styles.fieldItem}>
+              <Text style={styles.label}>性别</Text>
+              <Icon.Button
+                onPress={() => {
+                  this._changeUserState('gender', 'male')
+                }}
+                style={[
+                  styles.gender,
+                  user.gender === 'male' && styles.genderChecked
+                ]}
+                name='ios-paw'>男</Icon.Button>
+                <Icon.Button
+                onPress={() => {
+                  this._changeUserState('gender', 'female')
+                }}
+                style={[
+                  styles.gender,
+                  user.gender === 'female' && styles.genderChecked
+                ]}
+                name='ios-paw-outline'>女</Icon.Button>
+            </View>
+          </View>
+        </Modal>
       </View>
     )
   }
@@ -307,6 +408,16 @@ var styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
     fontWeight: '600'
+  },
+
+  toolbarExtra: {
+    position: 'absolute',
+    right: 10,
+    top: 26,
+    color: '#fff',
+    textAlign: 'right',
+    fontWeight: '600',
+    fontSize: 14
   },
 
   avatarContainer: {
@@ -347,6 +458,53 @@ var styles = StyleSheet.create({
     fontSize: 24,
     backgroundColor: '#fff',
     borderRadius: 8
+  },
+
+  modalContainer: {
+    flex: 1,
+    paddingTop: 50,
+    backgroundColor: '#fff'
+  },
+
+  fieldItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    height: 50,
+    paddingLeft: 15,
+    paddingRight: 15,
+    borderColor: '#eee',
+    borderBottomWidth: 1
+  },
+
+  label: {
+    color: '#ccc',
+    marginRight: 10
+  },
+
+  closeIcon: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    fontSize: 32,
+    right: 20,
+    top: 30,
+    color: '#ee735c'
+  },
+
+  gender:{
+    backgroundColor: '#ccc'
+  },
+
+  genderChecked: {
+    backgroundColor: '#ee735c'
+  },
+
+  inputField: {
+    flex: 1,
+    height: 50,
+    color: '#666',
+    fontSize: 14
   }
 });
 
