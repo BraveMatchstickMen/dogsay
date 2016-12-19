@@ -5,6 +5,7 @@ var sha1 = require('sha1')
 var Icon = require('react-native-vector-icons/Ionicons')
 var ImagePicker = require('NativeModules').ImagePickerManager
 var Progress = require('react-native-progress')
+var Button = require('react-native-button').default
 
 var request = require('../common/request')
 var config = require('../common/config')
@@ -246,6 +247,7 @@ var Account = React.createClass({
             that.setState({
               user: user
             }, function() {
+              that._closeModal()
               AsyncStorage.setItem('user', JSON.stringify(user))
             })
           }
@@ -261,6 +263,14 @@ var Account = React.createClass({
     this.setState({
       user: user
     })
+  },
+
+  _submit() {
+    this._asyncUser()
+  },
+
+  _logout() {
+    this.props.logout()
   },
 
   render() {
@@ -383,8 +393,17 @@ var Account = React.createClass({
                 ]}
                 name='ios-paw-outline'>女</Icon.Button>
             </View>
+
+            <Button
+              style={styles.btn}
+              onPress={this._submit}>保存资料</Button>
+
           </View>
         </Modal>
+
+        <Button
+          style={styles.btn}
+          onPress={this._logout}>退出登录</Button>
       </View>
     )
   }
@@ -505,6 +524,18 @@ var styles = StyleSheet.create({
     height: 50,
     color: '#666',
     fontSize: 14
+  },
+
+  btn: {
+    marginTop: 25,
+    marginLeft: 10,
+    marginRight: 10,
+    padding: 10,
+    backgroundColor: 'transparent',
+    borderColor: '#ee735c',
+    borderWidth: 1,
+    borderRadius: 4,
+    color: '#ee735c'
   }
 });
 
