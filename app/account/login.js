@@ -17,7 +17,7 @@ var Login = React.createClass({
   getInitialState() {
   	return {
   	  phoneNumber: '',
-  	  verifycode: '',
+  	  verifyCode: '',
       codeSent: false
   	}
   },
@@ -42,6 +42,8 @@ var Login = React.createClass({
 
     var signupURL = config.api.base + config.api.signup
 
+    console.log(signupURL, body)
+
     request.post(signupURL, body)
       .then((data) => {
       	if (data && data.success) {
@@ -53,13 +55,14 @@ var Login = React.createClass({
       })
       .catch((err) => {
       	AlertIOS.alert('获取验证码失败，请检查网络是否良好')
+        console.log(err)
       })
   },
 
   _submit() {
   	var that = this
     var phoneNumber = this.state.phoneNumber
-    var verifycode = this.state.verifycode
+    var verifyCode = this.state.verifyCode
     
     if (!phoneNumber) {
     	return AlertIOS.alert('手机号或验证码不能为空！')
@@ -67,7 +70,7 @@ var Login = React.createClass({
 
     var body = {
     	phoneNumber: phoneNumber,
-    	verifycode: verifycode
+    	verifyCode: verifyCode
     }
 
     var verifyURL = config.api.base + config.api.verify
@@ -116,7 +119,7 @@ var Login = React.createClass({
 	      	      style={styles.inputField}
 	      	      onChangeText={(text) => {
 	      	      	this.setState({
-	      	      		verifycode: text
+	      	      		verifyCode: text
 	      	      	})
 	      	      }}
 	      	    />

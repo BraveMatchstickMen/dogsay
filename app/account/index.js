@@ -40,7 +40,6 @@ var photoOptions = {
 var CLOUDINARY = {
   cloud_name: 'db2oxpw9c',  
   api_key: '329161736663398',  
-  api_secret: '4WjD8BOdL9sz3pJfjJwDR-TAY2U',
   base: 'http://res.cloudinary.com/db2oxpw9c',
   image: 'https://api.cloudinary.com/v1_1/db2oxpw9c/image/upload',
   video: 'https://api.cloudinary.com/v1_1/db2oxpw9c/video/upload',
@@ -140,9 +139,8 @@ var Account = React.createClass({
       .then((data) => {
         console.log(data)
         if (data && data.success) {
-          var signature = 'folder=' + folder + '&tags=' + tags + '&timestamp=' + timestamp + CLOUDINARY.api_secret
 
-          signature = sha1(signature)
+          var signature = data.data
 
           var body = new FormData()
 

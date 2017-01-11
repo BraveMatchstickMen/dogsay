@@ -20,7 +20,7 @@ request.post = function(url, body) {
 		body: JSON.stringify(body)
 	})
 
-	return fetch(url)
+	return fetch(url, options)
 	  .then((response) => response.json())
       .then((response) => Mock.mock(response))
 }
