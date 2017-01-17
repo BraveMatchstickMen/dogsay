@@ -37,15 +37,6 @@ var photoOptions = {
   }
 };
 
-var CLOUDINARY = {
-  cloud_name: 'db2oxpw9c',  
-  api_key: '329161736663398',  
-  base: 'http://res.cloudinary.com/db2oxpw9c',
-  image: 'https://api.cloudinary.com/v1_1/db2oxpw9c/image/upload',
-  video: 'https://api.cloudinary.com/v1_1/db2oxpw9c/video/upload',
-  audio: 'https://api.cloudinary.com/v1_1/db2oxpw9c/raw/upload' 
-}
-
 function avatar(id, type) {
   if (id.indexOf('http') > -1) {
     return id
@@ -55,7 +46,11 @@ function avatar(id, type) {
     return id
   }
 
-  return CLOUDINARY.base + '/' + type + '/upload/' + id
+  if (id.indexOf('avatar/') > -1) {
+    return config.cloudinary.base + '/' + type + '/upload/' + id
+  }
+  
+  return 'http://ojwibjnxi.bkt.clouddn.com/' + id
 }
 
 var Account = React.createClass({
@@ -103,6 +98,18 @@ var Account = React.createClass({
       })
   },
 
+  _getQiniuToken() {
+    var accessToken = this.state.user.accessToken
+    var signatureURL = config.api.base + config.api.signature
+    return request.post(signatureURL, {
+        accessToken: accessToken,
+        cloud: 'qiniu'
+      })
+      .catch((err) => {
+        console.log(err)
+      })
+  },
+
   _pickPhoto() {
     var that = this
 
@@ -112,57 +119,64 @@ var Account = React.createClass({
       }
 
       var avartarData = 'data:image/jpeg;base64,' + res.data
-      // var user = that.state.user
+      var uri = res.uri
 
-      // user.avatar = avartarData
+      that._getQiniuToken()
+        .then((data) => {
+          console.log('_getQiniuToken: ' + data)
+          if (data && data.success) {
 
-      // that.setState({
-      //   user: user
+            var token = data.data.token
+            var key = data.data.key
+            var body = new FormData()
+
+            body.append('token', token)
+            body.append('key', key)
+            body.append('file', {
+              type: 'image/jpeg',
+              uri: uri,
+              name: key
+            })
+
+            that._upload(body)
+          }
+        })
+
+      // request.post(signatureURL, {
+      //   accessToken: accessToken,
+      //   timestamp: timestamp,
+      //   type: 'avatar'
       // })
+      // .catch((err) => {
+      //   console.log(err)
+      // })
+      // .then((data) => {
+      //   console.log(data)
+      //   if (data && data.success) {
 
-      var timestamp = Date.now()
-      var tags = 'app,avatar'
-      var folder = 'avatar'
-      var signatureURL = config.api.base + config.api.signature
-      var accessToken = this.state.user.accessToken
+      //     var signature = data.data
 
-      request.post(signatureURL, {
-        accessToken: accessToken,
-        timestamp: timestamp,
-        folder: folder,
-        tags: tags,
-        type: 'avatar'
-      })
-      .catch((err) => {
-        console.log(err)
-      })
-      .then((data) => {
-        console.log(data)
-        if (data && data.success) {
+      //     var body = new FormData()
 
-          var signature = data.data
+      //     body.append('folder', folder)
+      //     body.append('signature', signature)
+      //     body.append('tags', tags)
+      //     body.append('timestamp', timestamp)
+      //     body.append('api_key', config.cloudinary.api_key)
+      //     body.append('resource_type', 'image')
+      //     body.append('file', avartarData)
 
-          var body = new FormData()
+      //     that._upload(body)
 
-          body.append('folder', folder)
-          body.append('signature', signature)
-          body.append('tags', tags)
-          body.append('timestamp', timestamp)
-          body.append('api_key', CLOUDINARY.api_key)
-          body.append('resource_type', 'image')
-          body.append('file', avartarData)
-
-          that._upload(body)
-
-        }
-      })
+      //   }
+      // })
     })
   },
 
   _upload(body) {
     var that = this
     var xhr = new XMLHttpRequest()
-    var url = CLOUDINARY.image
+    var url = config.qiniu.upload
 
     console.log(body)
 
@@ -196,11 +210,17 @@ var Account = React.createClass({
         console.log('parse fails')
       }
 
-      if (response && response.public_id) {
+      console.log('upload api: ' + response)
+
+      if (response) {
         var user = this.state.user
-
-        user.avatar = response.public_id
-
+        if (response.public_id) {
+          user.avatar = response.public_id
+        }
+        if (response.key) {
+          user.avatar = response.key
+        }
+      
         that.setState({
           avatarUploading: false,
           avatarProgress: 0,
