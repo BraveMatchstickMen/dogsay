@@ -2,6 +2,8 @@
 
 var React = require('react-native')
 var Icon = require('react-native-vector-icons/Ionicons')
+var Video = require('react-native-video').default
+var ImagePicker = require('NativeModules').ImagePickerManager
 var Text = React.Text
 var View = React.View
 var Image = React.Image
@@ -12,13 +14,149 @@ var Dimensions = React.Dimensions
 var width = Dimensions.get('window').width
 var height = Dimensions.get('window').height
 
+var videoOptions = {
+  title: '选择视频',
+  cancelButtonTitle: '取消',
+  takePhotoButtonTitle: '录制 10 秒视频',
+  chooseFromLibraryButtonTitle: '选择已有视频',
+  videoQuality: 'medium',
+  mediaType: 'video',
+  durationLimit: 10,
+  noData: false,
+  storageOptions: {
+    skipBackup: true,
+    path: 'images'
+  }
+};
+
 var Edit = React.createClass({
   getInitialState() {
     var user = this.props.user || {}
 
     return {
-      previewVideo: null
+      previewVideo: null,
+
+      // video loads
+      videoLoaded: false,
+      paused: false,
+      playing: false,
+      videoOk: true,
+      videoProgress: 0.01,
+      videoTotal: 0,
+      currentTime: 0,
+
+      // video player
+      rate: 1,
+      muted: true,
+      resizeMode: 'contain',
+      repeat: false,
     }
+  },
+
+  _onLoadStart() {
+    console.log('load start')
+  },
+
+  _onLoad() {
+    console.log('load')
+  },
+
+  _onProgress(data) {
+    if (!this.state.videoLoaded) {
+      this.setState({
+        videoLoaded: true
+      })
+    }
+
+    var duration = data.playableDuration
+    var currentTime = data.currentTime
+    var percent = Number((currentTime / duration).toFixed(2))
+    
+    var newState = {
+      videoTotal: duration,
+      currentTime: Number(data.currentTime.toFixed(2)),
+      videoProgress: percent
+    }
+
+    if (!this.state.videoLoaded) {
+      newState.videoLoaded = true
+    }
+
+    if (!this.state.playing) {
+      newState.playing = true
+    }
+
+    this.setState(newState)
+  },
+
+  _onEnd() {
+    this.setState({
+      videoProgress: 1,
+      playing: false
+    })
+  },
+
+  _onError(e) {
+    this.setState({
+      videoOk: false
+    })
+  },
+
+  _rePlay() {
+    this.refs.videoPlayer.seek(0)
+  },
+
+  _pause() {
+    if (!this.state.paused) {
+      this.setState({
+        paused: true
+      })
+    }
+  },
+
+  _resume() {
+    if (this.state.paused) {
+      this.setState({
+        paused: false
+      })
+    }
+  },
+
+  _pickVideo() {
+    var that = this
+
+    ImagePicker.showImagePicker(videoOptions, (res) => {
+      if (res.didCancel) {
+        return
+      }
+
+      var uri = res.uri
+
+      that.setState({
+        previewVideo: uri
+      })
+
+      // that._getQiniuToken()
+      //   .then((data) => {
+      //     console.log('_getQiniuToken: ' + data)
+      //     if (data && data.success) {
+
+      //       var token = data.data.token
+      //       var key = data.data.key
+      //       var body = new FormData()
+
+      //       body.append('token', token)
+      //       body.append('key', key)
+      //       body.append('file', {
+      //         type: 'image/jpeg',
+      //         uri: uri,
+      //         name: key
+      //       })
+
+      //       that._upload(body)
+      //     }
+      //   })
+    })
   },
 
   render: function() {
@@ -32,7 +170,26 @@ var Edit = React.createClass({
         <View style={styles.page}>
           {
             this.state.previewVideo
-            ? <View></View>
+            ? <View style={styles.videoContainer}>
+                <View style={styles.videoBox}>
+                  <Video
+                    ref='videoPlayer'
+                    source={{uri: this.state.previewVideo}}
+                    style={styles.video}
+                    volume={5}
+                    paused={this.state.paused}
+                    rate={this.state.rate}
+                    muted={this.state.muted}
+                    resizeMode={this.state.resizeMode}
+                    repeat={this.state.repeat}
+
+                    onLoadStart={this._onLoadStart}
+                    onLoad={this._onLoad}
+                    onProgress={this._onProgress}
+                    onEnd={this._onEnd}
+                    onError={this._onError} />
+                </View>
+              </View>
             : <TouchableOpacity style={styles.uploadContainer}
               onPress={this._pickVideo}>
               <View style={styles.uploadBox}>
