@@ -8,8 +8,14 @@ var Text = React.Text
 var View = React.View
 var Image = React.Image
 var TouchableOpacity = React.TouchableOpacity
+var AsyncStorage = React.AsyncStorage
+var ProgressViewIOS = React.ProgressViewIOS
+var AlertIOS = React.AlertIOS
 var StyleSheet = React.StyleSheet
 var Dimensions = React.Dimensions
+
+var request = require('../common/request')
+var config = require('../common/config')
 
 var width = Dimensions.get('window').width
 var height = Dimensions.get('window').height
@@ -34,13 +40,18 @@ var Edit = React.createClass({
     var user = this.props.user || {}
 
     return {
+      user: user,
       previewVideo: null,
 
+      // video upload
+      video: null,
+      videoUpLoaded: false,
+      videoUploading: false,
+      videoUploadedProgress: 0.01,
+
       // video loads
-      videoLoaded: false,
       paused: false,
       playing: false,
-      videoOk: true,
       videoProgress: 0.01,
       videoTotal: 0,
       currentTime: 0,
@@ -62,12 +73,6 @@ var Edit = React.createClass({
   },
 
   _onProgress(data) {
-    if (!this.state.videoLoaded) {
-      this.setState({
-        videoLoaded: true
-      })
-    }
-
     var duration = data.playableDuration
     var currentTime = data.currentTime
     var percent = Number((currentTime / duration).toFixed(2))
@@ -76,10 +81,6 @@ var Edit = React.createClass({
       videoTotal: duration,
       currentTime: Number(data.currentTime.toFixed(2)),
       videoProgress: percent
-    }
-
-    if (!this.state.videoLoaded) {
-      newState.videoLoaded = true
     }
 
     if (!this.state.playing) {
@@ -122,6 +123,121 @@ var Edit = React.createClass({
     }
   },
 
+  componentDidMount() {
+    var that = this
+
+    AsyncStorage.getItem('user')
+      .then((data) => {
+        var user
+
+        console.log(data)
+
+        if (data) {
+          user = JSON.parse(data)
+        }
+
+        if (user && user.accessToken) {
+          that.setState({
+            user: user
+          })
+        }
+      })
+  },
+
+  _getQiniuToken() {
+    var accessToken = this.state.user.accessToken
+    var signatureURL = config.api.base + config.api.signature
+    return request.post(signatureURL, {
+        accessToken: accessToken,
+        type: 'video',
+        cloud: 'qiniu'
+      })
+      .catch((err) => {
+        console.log(err)
+      })
+  },
+
+  _upload(body) {
+    var that = this
+    var xhr = new XMLHttpRequest()
+    var url = config.qiniu.upload
+
+    console.log(body)
+
+    this.setState({
+      videoUploadedProgress: 0,
+      videoUploading: true,
+      videoUploaded: false
+    })
+
+    xhr.open('POST', url)
+    xhr.onload = () => {
+      if (xhr.status !== 200) {
+        AlertIOS.alert('请求失败')
+        console.log(xhr.responseText)
+
+        return
+      }
+
+      if (!xhr.responseText) {
+        AlertIOS.alert('请求失败')
+
+        return
+      }
+
+      var response
+
+      try {
+        response = JSON.parse(xhr.response)
+      }
+      catch(e) {
+        console.log(e)
+        console.log('parse fails')
+      }
+
+      console.log('upload api: ' + response)
+
+      if (response) {
+        that.setState({
+          video: response,
+          videoUploading: false,
+          videoUploaded: true,
+        })
+
+        var videoURL = config.api.base + config.api.video
+        var accessToken = this.state.user.accessToken
+
+        request.post(videoURL, {
+          accessToken: accessToken,
+          video: response
+        })
+        .catch((err) => {
+          console.log(err)
+          AlertIOS.alert('视频同步出错，请重新上传！')
+        })
+        .then((data) => {
+          if (!data || !data.success) {
+            AlertIOS.alert('视频同步出错，请重新上传！')
+          }
+        })
+      }
+    }
+
+    if (xhr.upload) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          var percent = Number((event.loaded / event.total).toFixed(2))
+
+          that.setState({
+            videoUploadedProgress: percent
+          })
+        }
+      }
+    }
+
+    xhr.send(body)
+  },
+
   _pickVideo() {
     var that = this
 
@@ -131,40 +247,46 @@ var Edit = React.createClass({
       }
 
       var uri = res.uri
+      console.log('uri:' + uri)
 
       that.setState({
         previewVideo: uri
       })
 
-      // that._getQiniuToken()
-      //   .then((data) => {
-      //     console.log('_getQiniuToken: ' + data)
-      //     if (data && data.success) {
+      that._getQiniuToken()
+        .then((data) => {
+          console.log('_getQiniuToken: ' + data)
+          if (data && data.success) {
 
-      //       var token = data.data.token
-      //       var key = data.data.key
-      //       var body = new FormData()
+            var token = data.data.token
+            var key = data.data.key
+            var body = new FormData()
 
-      //       body.append('token', token)
-      //       body.append('key', key)
-      //       body.append('file', {
-      //         type: 'image/jpeg',
-      //         uri: uri,
-      //         name: key
-      //       })
+            body.append('token', token)
+            body.append('key', key)
+            body.append('file', {
+              type: 'video/mp4',
+              uri: uri,
+              name: key
+            })
 
-      //       that._upload(body)
-      //     }
-      //   })
+            that._upload(body)
+          }
+        })
     })
   },
 
   render: function() {
+    console.log(this.state.previewVideo)
+    console.log(this.state.videoUpLoaded)
     return (
       <View style={styles.container}>
         <View style={styles.toolbar}>
           <Text style={styles.toolbarTitle}>{this.state.previewVideo ? '点击按钮配音' : '理解狗狗，从配音开始'}</Text>
-          <Text style={styles.toolbarExtra} onPress={this._pickVideo}>更换视频</Text>
+          {
+            this.state.previewVideo && this.state.videoUpLoaded ? <Text style={styles.toolbarExtra} onPress={this._pickVideo}>更换视频</Text>
+            : null
+          }
         </View>
 
         <View style={styles.page}>
@@ -188,6 +310,15 @@ var Edit = React.createClass({
                     onProgress={this._onProgress}
                     onEnd={this._onEnd}
                     onError={this._onError} />
+                    {
+                      !this.state.videoUpLoaded && this.state.videoUploading
+                      ? <View style={styles.progressTipBox}>
+                          <ProgressViewIOS style={styles.progressBar} progressTintColor='#ee735c' progress={this.state.videoUploadedProgress} />
+                          <Text style={styles.progressTip}>正在生成静音视频，已完成{(this.state.videoUploadedProgress * 100).toFixed(2)}%
+                          </Text>
+                        </View> 
+                        : null
+                    }
                 </View>
               </View>
             : <TouchableOpacity style={styles.uploadContainer}

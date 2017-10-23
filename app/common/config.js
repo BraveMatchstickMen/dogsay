@@ -19,11 +19,12 @@ module.exports = {
 	  audio: 'https://api.cloudinary.com/v1_1/db2oxpw9c/raw/upload' 
 	},
 	api: {
-		base: 'http://rap.taobao.org/mockjs/4230/',
-		// base: 'http://localhost:1234/',
+		// base: 'http://rap.taobao.org/mockjs/4230/',
+		base: 'http://localhost:1234/',
 		creations: 'api/creations',
 		comment: 'api/comments',
 		up: 'api/up',
+		video: 'api/creations/video',
 		signup: 'api/u/signup',
 		verify: 'api/u/verify',
 		update: 'api/u/update',
