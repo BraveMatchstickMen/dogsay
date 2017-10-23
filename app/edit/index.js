@@ -4,6 +4,7 @@ var React = require('react-native')
 var Icon = require('react-native-vector-icons/Ionicons')
 var Video = require('react-native-video').default
 var ImagePicker = require('NativeModules').ImagePickerManager
+var CountDown = require('react-native-sk-countdown').CountDownText
 var Text = React.Text
 var View = React.View
 var Image = React.Image
@@ -50,11 +51,13 @@ var Edit = React.createClass({
       videoUploadedProgress: 0.01,
 
       // video loads
-      paused: false,
-      playing: false,
       videoProgress: 0.01,
       videoTotal: 0,
       currentTime: 0,
+
+      // count down
+      counting: false,
+      recording: false,
 
       // video player
       rate: 1,
@@ -76,25 +79,21 @@ var Edit = React.createClass({
     var duration = data.playableDuration
     var currentTime = data.currentTime
     var percent = Number((currentTime / duration).toFixed(2))
-    
-    var newState = {
+
+    this.setState({
       videoTotal: duration,
       currentTime: Number(data.currentTime.toFixed(2)),
       videoProgress: percent
-    }
-
-    if (!this.state.playing) {
-      newState.playing = true
-    }
-
-    this.setState(newState)
+    })
   },
 
   _onEnd() {
-    this.setState({
-      videoProgress: 1,
-      playing: false
-    })
+    if (this.state.recording) {
+      this.setState({
+        videoProgress: 1,
+        recording: false
+      })
+    }
   },
 
   _onError(e) {
@@ -123,6 +122,26 @@ var Edit = React.createClass({
     }
   },
 
+  _record() {
+    this.setState({
+      videoProgress: 0,
+      counting: false,
+      recording: true
+    })
+
+    this.refs.videoPlayer.seek(0)
+  },
+
+  _counting() {
+    if (!this.state.counting && !this.state.recording) {
+      this.setState({
+        counting: true
+      })
+
+      this.refs.videoPlayer.seek(this.state.videoTotal - 0.01)
+    }
+  },
+
   componentDidMount() {
     var that = this
 
@@ -130,7 +149,7 @@ var Edit = React.createClass({
       .then((data) => {
         var user
 
-        console.log(data)
+        // console.log(data)
 
         if (data) {
           user = JSON.parse(data)
@@ -162,7 +181,7 @@ var Edit = React.createClass({
     var xhr = new XMLHttpRequest()
     var url = config.qiniu.upload
 
-    console.log(body)
+    // console.log(body)
 
     this.setState({
       videoUploadedProgress: 0,
@@ -174,7 +193,7 @@ var Edit = React.createClass({
     xhr.onload = () => {
       if (xhr.status !== 200) {
         AlertIOS.alert('请求失败')
-        console.log(xhr.responseText)
+        // console.log(xhr.responseText)
 
         return
       }
@@ -201,7 +220,7 @@ var Edit = React.createClass({
         that.setState({
           video: response,
           videoUploading: false,
-          videoUploaded: true,
+          videoUploaded: true
         })
 
         var videoURL = config.api.base + config.api.video
@@ -234,7 +253,6 @@ var Edit = React.createClass({
         }
       }
     }
-
     xhr.send(body)
   },
 
@@ -277,14 +295,13 @@ var Edit = React.createClass({
   },
 
   render: function() {
-    console.log(this.state.previewVideo)
-    console.log(this.state.videoUpLoaded)
     return (
       <View style={styles.container}>
         <View style={styles.toolbar}>
           <Text style={styles.toolbarTitle}>{this.state.previewVideo ? '点击按钮配音' : '理解狗狗，从配音开始'}</Text>
           {
-            this.state.previewVideo && this.state.videoUpLoaded ? <Text style={styles.toolbarExtra} onPress={this._pickVideo}>更换视频</Text>
+            this.state.previewVideo && this.state.videoUpLoaded 
+            ? <Text style={styles.toolbarExtra} onPress={this._pickVideo}>更换视频</Text>
             : null
           }
         </View>
@@ -319,6 +336,16 @@ var Edit = React.createClass({
                         </View> 
                         : null
                     }
+
+                    {
+                      this.state.recording
+                      ? <View style={styles.progressTipBox}>
+                        <ProgressViewIOS style={styles.progressBar} progressTintColor='#ee735c' progress={this.state.videoUploadedProgress} />
+                        <Text style={styles.progressTip}>录制声音中{(this.state.videoProgress * 100).toFixed(2)}%
+                        </Text>
+                      </View>
+                      : null
+                    }
                 </View>
               </View>
             : <TouchableOpacity style={styles.uploadContainer}
@@ -329,6 +356,33 @@ var Edit = React.createClass({
                 <Text style={styles.uploadDesc}>建议时长不超过 20 秒</Text>
               </View>
             </TouchableOpacity>
+          }
+
+          {
+            this.state.videoUpLoaded
+            ? <View style={styles.recordBox}>
+                <View style={[styles.recordIconBox, this.state.recording && styles.recordOn]}>
+                  {
+                    this.state.counting && !this.state.recording
+                    ? <CountDown
+                        style={styles.countBtn}
+                        countType='seconds' // 计时类型：seconds / date
+                        auto={true} // 自动开始
+                        afterEnd={this._record} // 结束回调
+                        timeLeft={3} // 正向计时 时间起点为0秒
+                        step={-1} // 计时步长，以秒为单位，正数则为正计时，负数为倒计时
+                        startText='准备录制' // 开始的文本
+                        endText='Go' // 结束的文本
+                        intervalText={(sec) => {
+                          return sec === 0 ? 'Go' : sec
+                        }} // 定时的文本回调
+                      />
+                      : <TouchableOpacity onPress={this._counting}>
+                          <Icon name='ios-mic' style={styles.recordIcon} />
+                        </TouchableOpacity>
+                  }
+                </View>
+              </View> : null
           }
         </View>
       </View>
