@@ -1,10 +1,15 @@
 'use strict';
 
+var _ = require('lodash')
 var React = require('react-native')
 var Icon = require('react-native-vector-icons/Ionicons')
 var Video = require('react-native-video').default
 var ImagePicker = require('NativeModules').ImagePickerManager
 var CountDown = require('react-native-sk-countdown').CountDownText
+var RNAudio = require('react-native-audio')
+var AudioRecorder = RNAudio.AudioRecorder
+var AudioUtils = RNAudio.AudioUtils
+
 var Text = React.Text
 var View = React.View
 var Image = React.Image
@@ -36,35 +41,45 @@ var videoOptions = {
   }
 };
 
+var defaultState = {
+  previewVideo: null,
+
+  // video upload
+  video: null,
+  videoUploaded: false,
+  videoUploading: false,
+  videoUploadedProgress: 0.01,
+
+  // video loads
+  videoProgress: 0.01,
+  videoTotal: 0,
+  currentTime: 0,
+
+  // count down
+  counting: false,
+  recording: false,
+
+  // audio 
+  audioName: 'gougou.aac',
+  audioPlaying: false,
+  recordDone: false,
+
+  // video player
+  rate: 1,
+  muted: true,
+  resizeMode: 'contain',
+  repeat: false,
+}
+
 var Edit = React.createClass({
   getInitialState() {
     var user = this.props.user || {}
 
-    return {
-      user: user,
-      previewVideo: null,
+    var state = _.clone(defaultState)
+    
+    state.user = user
 
-      // video upload
-      video: null,
-      videoUpLoaded: false,
-      videoUploading: false,
-      videoUploadedProgress: 0.01,
-
-      // video loads
-      videoProgress: 0.01,
-      videoTotal: 0,
-      currentTime: 0,
-
-      // count down
-      counting: false,
-      recording: false,
-
-      // video player
-      rate: 1,
-      muted: true,
-      resizeMode: 'contain',
-      repeat: false,
-    }
+    return state
   },
 
   _onLoadStart() {
@@ -89,8 +104,11 @@ var Edit = React.createClass({
 
   _onEnd() {
     if (this.state.recording) {
+      AudioRecorder.stopRecording()
+
       this.setState({
         videoProgress: 1,
+        recordDone: true,
         recording: false
       })
     }
@@ -102,43 +120,64 @@ var Edit = React.createClass({
     })
   },
 
-  _rePlay() {
+  _preview() {
+    if (this.state.audioPlaying) {
+      AudioRecorder.stopRecording()
+    }
+
+    this.setState({
+      videoProgress: 0,
+      audioPlaying: true
+    })
+
+    AudioRecorder.playRecording()
     this.refs.videoPlayer.seek(0)
-  },
-
-  _pause() {
-    if (!this.state.paused) {
-      this.setState({
-        paused: true
-      })
-    }
-  },
-
-  _resume() {
-    if (this.state.paused) {
-      this.setState({
-        paused: false
-      })
-    }
   },
 
   _record() {
     this.setState({
       videoProgress: 0,
       counting: false,
+      recordDone: false,
       recording: true
     })
 
+    AudioRecorder.startRecording()
     this.refs.videoPlayer.seek(0)
   },
 
   _counting() {
-    if (!this.state.counting && !this.state.recording) {
+    if (!this.state.counting && !this.state.recording && !this.state.audioPlaying) {
       this.setState({
         counting: true
       })
 
       this.refs.videoPlayer.seek(this.state.videoTotal - 0.01)
+    }
+  },
+
+  _initAudio() {
+    var audioPath = AudioUtils.DocumentDirectoryPath + this.state.audioName
+
+    console.log(audioPath)
+
+    AudioRecorder.prepareRecordingAtPath(audioPath, {
+      SampleRate: 22050,
+      Channels: 1,
+      AudioQuality: "High",
+      AudioEncoding: "aac",
+    })
+
+    AudioRecorder.onProgress = (data) => {
+      this.setState({
+        currentTime: Math.floor(data.currentTime)
+      })
+    }
+    AudioRecorder.onFinished = (data) => {
+      this.setState({
+        finished: data.finished
+      })
+      console.log(`Finished recording: ${data.finished}`)
     }
   },
 
@@ -161,6 +200,7 @@ var Edit = React.createClass({
           })
         }
       })
+      this._initAudio()
   },
 
   _getQiniuToken() {
@@ -219,8 +259,8 @@ var Edit = React.createClass({
       if (response) {
         that.setState({
           video: response,
-          videoUploading: false,
-          videoUploaded: true
+          videoUploaded: true,
+          videoUploading: false
         })
 
         var videoURL = config.api.base + config.api.video
@@ -264,12 +304,11 @@ var Edit = React.createClass({
         return
       }
 
+      var state = _.clone(defaultState)
       var uri = res.uri
-      console.log('uri:' + uri)
-
-      that.setState({
-        previewVideo: uri
-      })
+      state.previewVideo = res.uri
+      state.user = this.state.user
+      that.setState(state)
 
       that._getQiniuToken()
         .then((data) => {
@@ -300,7 +339,7 @@ var Edit = React.createClass({
         <View style={styles.toolbar}>
           <Text style={styles.toolbarTitle}>{this.state.previewVideo ? '点击按钮配音' : '理解狗狗，从配音开始'}</Text>
           {
-            this.state.previewVideo && this.state.videoUpLoaded 
+            this.state.previewVideo && this.state.videoUploaded 
             ? <Text style={styles.toolbarExtra} onPress={this._pickVideo}>更换视频</Text>
             : null
           }
@@ -326,42 +365,58 @@ var Edit = React.createClass({
                     onLoad={this._onLoad}
                     onProgress={this._onProgress}
                     onEnd={this._onEnd}
-                    onError={this._onError} />
-                    {
-                      !this.state.videoUpLoaded && this.state.videoUploading
-                      ? <View style={styles.progressTipBox}>
-                          <ProgressViewIOS style={styles.progressBar} progressTintColor='#ee735c' progress={this.state.videoUploadedProgress} />
-                          <Text style={styles.progressTip}>正在生成静音视频，已完成{(this.state.videoUploadedProgress * 100).toFixed(2)}%
-                          </Text>
-                        </View> 
-                        : null
-                    }
-
-                    {
-                      this.state.recording
-                      ? <View style={styles.progressTipBox}>
+                    onError={this._onError} 
+                  />
+                  {
+                    !this.state.videoUploaded && this.state.videoUploading
+                    ? <View style={styles.progressTipBox}>
                         <ProgressViewIOS style={styles.progressBar} progressTintColor='#ee735c' progress={this.state.videoUploadedProgress} />
-                        <Text style={styles.progressTip}>录制声音中{(this.state.videoProgress * 100).toFixed(2)}%
+                        <Text style={styles.progressTip}>正在生成静音视频，已完成{(this.state.videoUploadedProgress * 100).toFixed(2)}%
+                        </Text>
+                      </View> 
+                      : null
+                  }
+
+                  {
+                    this.state.recording || this.state.audioPlaying
+                    ? <View style={styles.progressTipBox}>
+                      <ProgressViewIOS style={styles.progressBar} progressTintColor='#ee735c' progress={this.state.videoProgress} />
+                      {
+                        this.state.recording
+                        ? <Text style={styles.progressTip}>录制声音中{(this.state.videoProgress * 100).toFixed(2)}%
+                          </Text>
+                        : null
+                      }
+                    </View>
+                    : null
+                  }
+
+                  {
+                    this.state.recordDone
+                    ? <View style={styles.previewBox}>
+                        <Icon name='ios-play' style={styles.previewIcon} />
+                        <Text style={styles.previewText} onPress={this._preview}>
+                          预览
                         </Text>
                       </View>
-                      : null
-                    }
+                    : null
+                  }
                 </View>
               </View>
             : <TouchableOpacity style={styles.uploadContainer}
-              onPress={this._pickVideo}>
-              <View style={styles.uploadBox}>
-                <Image source={require('../assets/images/record.png')} style={styles.uploadIcon} />
-                <Text style={styles.uploadTitle}>点我上传视频</Text>
-                <Text style={styles.uploadDesc}>建议时长不超过 20 秒</Text>
-              </View>
-            </TouchableOpacity>
+                onPress={this._pickVideo}>
+                <View style={styles.uploadBox}>
+                  <Image source={require('../assets/images/record.png')} style={styles.uploadIcon} />
+                  <Text style={styles.uploadTitle}>点我上传视频</Text>
+                  <Text style={styles.uploadDesc}>建议时长不超过 20 秒</Text>
+                </View>
+              </TouchableOpacity>
           }
 
           {
-            this.state.videoUpLoaded
+            this.state.videoUploaded
             ? <View style={styles.recordBox}>
-                <View style={[styles.recordIconBox, this.state.recording && styles.recordOn]}>
+                <View style={[styles.recordIconBox, (this.state.recording || this.state.audioPlaying) && styles.recordOn]}>
                   {
                     this.state.counting && !this.state.recording
                     ? <CountDown

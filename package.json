@@ -11,6 +11,7 @@
     "query-string": "^4.2.3",
     "react": "^0.14.8",
     "react-native": "^0.22.2",
+    "react-native-audio": "^1.2.1",
     "react-native-button": "^1.7.1",
     "react-native-image-picker": "^0.20.0",
     "react-native-progress": "^3.3.0",
