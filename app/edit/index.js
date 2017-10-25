@@ -45,6 +45,9 @@ var videoOptions = {
 var defaultState = {
   previewVideo: null,
 
+  videoId: null,
+  audioId: null,
+
   // video upload
   video: null,
   videoUploaded: false,
@@ -306,25 +309,44 @@ var Edit = React.createClass({
 
         that.setState(newState)
 
-        if (type === 'video') {
-          var updateURL = config.api.base + config.api[type]
-          var accessToken = this.state.user.accessToken
-          var updateBody = {
-            accessToken: accessToken
-          }
-  
-          updateBody[type] = response
-          request.post(updateURL, updateBody)
-          .catch((err) => {
-            console.log(err)
+        var updateURL = config.api.base + config.api[type]
+        var accessToken = this.state.user.accessToken
+        var updateBody = {
+          accessToken: accessToken
+        }
+
+        updateBody[type] = response
+
+        if (type === 'audio') {
+          updateBody.videoId = that.state.videoId
+        }
+
+        request.post(updateURL, updateBody)
+        .catch((err) => {
+          if (type === 'video') {
             AlertIOS.alert('视频同步出错，请重新上传！')
-          })
-          .then((data) => {
-            if (!data || !data.success) {
+          }
+          else if (type === 'audio') {
+            AlertIOS.alert('音频同步出错，请重新上传！')
+          }
+          console.log(err)
+        })
+        .then((data) => {
+          if (data && data.success) {
+            var mediaState = {}
+
+            mediaState[type + 'Id'] = data.data
+            that.setState(mediaState)
+          }
+          else {
+            if (type === 'video') {
               AlertIOS.alert('视频同步出错，请重新上传！')
             }
-          })
-        }
+            else if (type === 'audio') {
+              AlertIOS.alert('音频同步出错，请重新上传！')
+            }
+          }
+        })
       }
     }
 
