@@ -7,6 +7,7 @@ var Video = require('react-native-video').default
 var ImagePicker = require('NativeModules').ImagePickerManager
 var CountDown = require('react-native-sk-countdown').CountDownText
 var RNAudio = require('react-native-audio')
+var Progress = require('react-native-progress')
 var AudioRecorder = RNAudio.AudioRecorder
 var AudioUtils = RNAudio.AudioUtils
 
@@ -60,9 +61,15 @@ var defaultState = {
   recording: false,
 
   // audio 
-  audioName: 'gougou.aac',
+  audio: null,
   audioPlaying: false,
   recordDone: false,
+
+  audioPath: AudioUtils.DocumentDirectoryPath + '/gougou.aac',
+
+  audioUploaded: false,
+  audioUploading: false,
+  audioUploadedProgress: 0.01,
 
   // video player
   rate: 1,
@@ -156,8 +163,46 @@ var Edit = React.createClass({
     }
   },
 
+  _uploadAudio() {
+    var that = this
+    var tags = 'app,audio'
+    var folder = 'audio'
+    var timestamp = Date.now()
+
+    this._getToken({
+      type: 'audio',
+      timestamp: timestamp,
+      cloud: 'cloudinary'
+    })
+    .catch((err) => {
+      console.log(err)
+    })
+    .then((data) => {
+      if (data && data.success) {
+
+        var signature = data.data.token
+        var key = data.data.key
+        var body = new FormData()
+
+        body.append('folder', folder)
+        body.append('signature', signature)
+        body.append('tags', tags)
+        body.append('timestamp', timestamp)
+        body.append('api_key', config.cloudinary.api_key)
+        body.append('resource_type', 'video')
+        body.append('file', {
+          type: 'video/mp4',
+          uri: this.state.audioPath,
+          name: key
+        })
+
+        that._upload(body, 'audio')
+      }
+    })
+  },
+
   _initAudio() {
-    var audioPath = AudioUtils.DocumentDirectoryPath + this.state.audioName
+    var audioPath = this.state.audioPath
 
     console.log(audioPath)
 
@@ -203,31 +248,28 @@ var Edit = React.createClass({
       this._initAudio()
   },
 
-  _getQiniuToken() {
-    var accessToken = this.state.user.accessToken
+  _getToken(body) {
     var signatureURL = config.api.base + config.api.signature
-    return request.post(signatureURL, {
-        accessToken: accessToken,
-        type: 'video',
-        cloud: 'qiniu'
-      })
-      .catch((err) => {
-        console.log(err)
-      })
+    body.accessToken = this.state.user.accessToken
+    return request.post(signatureURL, body)
   },
 
-  _upload(body) {
+  _upload(body, type) {
     var that = this
     var xhr = new XMLHttpRequest()
     var url = config.qiniu.upload
 
-    // console.log(body)
+    if (type === 'audio') {
+      url = config.cloudinary.video
+    }
 
-    this.setState({
-      videoUploadedProgress: 0,
-      videoUploading: true,
-      videoUploaded: false
-    })
+    var state = {}
+
+    state[type + 'UploadeProgress'] = 0
+    state[type + 'Uploading'] = true
+    state[type + 'Uploaded'] = false
+
+    this.setState(state)
 
     xhr.open('POST', url)
     xhr.onload = () => {
@@ -257,28 +299,32 @@ var Edit = React.createClass({
       console.log('upload api: ' + response)
 
       if (response) {
-        that.setState({
-          video: response,
-          videoUploaded: true,
-          videoUploading: false
-        })
+        var newState = {}
+        newState[type] = response
+        newState[type + 'Uploading'] = false
+        newState[type + 'Uploaded'] = true
 
-        var videoURL = config.api.base + config.api.video
-        var accessToken = this.state.user.accessToken
+        that.setState(newState)
 
-        request.post(videoURL, {
-          accessToken: accessToken,
-          video: response
-        })
-        .catch((err) => {
-          console.log(err)
-          AlertIOS.alert('视频同步出错，请重新上传！')
-        })
-        .then((data) => {
-          if (!data || !data.success) {
-            AlertIOS.alert('视频同步出错，请重新上传！')
+        if (type === 'video') {
+          var updateURL = config.api.base + config.api[type]
+          var accessToken = this.state.user.accessToken
+          var updateBody = {
+            accessToken: accessToken
           }
-        })
+  
+          updateBody[type] = response
+          request.post(updateURL, updateBody)
+          .catch((err) => {
+            console.log(err)
+            AlertIOS.alert('视频同步出错，请重新上传！')
+          })
+          .then((data) => {
+            if (!data || !data.success) {
+              AlertIOS.alert('视频同步出错，请重新上传！')
+            }
+          })
+        }
       }
     }
 
@@ -287,9 +333,10 @@ var Edit = React.createClass({
         if (event.lengthComputable) {
           var percent = Number((event.loaded / event.total).toFixed(2))
 
-          that.setState({
-            videoUploadedProgress: percent
-          })
+          var progressState = {}
+
+          progressState[type + 'UploadedProgress'] = percent
+          that.setState(progressState)
         }
       }
     }
@@ -310,7 +357,14 @@ var Edit = React.createClass({
       state.user = this.state.user
       that.setState(state)
 
-      that._getQiniuToken()
+      that._getToken({
+        type: 'video',
+        cloud: 'qiniu'
+      })
+      .catch((err) => {
+        console.log(err)
+        AlertIOS.alert('上传出错')
+      })
         .then((data) => {
           console.log('_getQiniuToken: ' + data)
           if (data && data.success) {
@@ -327,7 +381,7 @@ var Edit = React.createClass({
               name: key
             })
 
-            that._upload(body)
+            that._upload(body, 'video')
           }
         })
     })
@@ -437,7 +491,30 @@ var Edit = React.createClass({
                         </TouchableOpacity>
                   }
                 </View>
-              </View> : null
+              </View> 
+            : null
+          }
+
+          {
+            this.state.videoUploaded && this.state.recordDone
+            ? <View style={styles.uploadAudioBox}>
+                {
+                  !this.state.audioUploaded && !this.state.audioUploading
+                  ? <Text style={styles.uploadAudioText} onPress={this._uploadAudio}>下一步</Text>
+                  : null
+                }
+                {
+                  this.state.audioUploading
+                  ? <Progress.Circle 
+                      showsText={true}
+                      size={60}
+                      color={'#ee735c'}
+                      progress={this.state.audioUploadedProgress} 
+                    />
+                  : null
+                }
+              </View>
+            :null
           }
         </View>
       </View>
