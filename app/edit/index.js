@@ -458,6 +458,7 @@ var Edit = React.createClass({
           AlertIOS.alert('视频发布失败')
         })
         .then((data) => {
+          console.log(data)
           if (data && data.success) {
             that._closeModal()
             AlertIOS.alert('视频发布成功')
