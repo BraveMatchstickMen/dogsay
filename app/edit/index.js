@@ -8,6 +8,8 @@ var ImagePicker = require('NativeModules').ImagePickerManager
 var CountDown = require('react-native-sk-countdown').CountDownText
 var RNAudio = require('react-native-audio')
 var Progress = require('react-native-progress')
+var Button = require('react-native-button').default
+
 var AudioRecorder = RNAudio.AudioRecorder
 var AudioUtils = RNAudio.AudioUtils
 
@@ -20,6 +22,8 @@ var ProgressViewIOS = React.ProgressViewIOS
 var AlertIOS = React.AlertIOS
 var StyleSheet = React.StyleSheet
 var Dimensions = React.Dimensions
+var Modal = React.Modal
+var TextInput = React.TextInput
 
 var request = require('../common/request')
 var config = require('../common/config')
@@ -47,6 +51,12 @@ var defaultState = {
 
   videoId: null,
   audioId: null,
+
+  title: '',
+  modalVisible: false,
+  publishing: false,
+  willPublish: false,
+  publishProgress: 0,
 
   // video upload
   video: null,
@@ -334,8 +344,12 @@ var Edit = React.createClass({
         .then((data) => {
           if (data && data.success) {
             var mediaState = {}
-
             mediaState[type + 'Id'] = data.data
+
+            if (type === 'audio') {
+              that._showModal()
+              mediaState.willPublish = true
+            }
             that.setState(mediaState)
           }
           else {
@@ -407,6 +421,58 @@ var Edit = React.createClass({
           }
         })
     })
+  },
+
+  _closeModal() {
+    this.setState({
+      modalVisible: false
+    })
+  },
+
+  _showModal() {
+    this.setState({
+      modalVisible: true
+    })
+  },
+
+  _submit() {
+    var that = this
+    var body = {
+      title: this.state.title,
+      videoId: this.state.videoId,
+      audioId: this.state.audioId
+    }
+    var creationURL = config.api.base + config.api.creations
+    var user = this.state.user
+
+    if (user && user.accessToken) {
+      body.accessToken = user.accessToken
+
+      this.setState({
+        publishing: true
+      })
+
+      request.post(creationURL, body)
+        .catch((err) => {
+          console.log(err)
+          AlertIOS.alert('视频发布失败')
+        })
+        .then((data) => {
+          if (data && data.success) {
+            that._closeModal()
+            AlertIOS.alert('视频发布成功')
+            var state = _.clone(defaultState)
+
+            that.setState(state)
+          }
+          else {
+            this.setState({
+              publishing: false
+            })
+            AlertIOS.alert('视频发布失败')
+          }
+        })
+    }
   },
 
   render: function() {
@@ -539,6 +605,71 @@ var Edit = React.createClass({
             :null
           }
         </View>
+        <Modal
+          animated={false}
+          visible={this.state.modalVisible}>
+          <View style={styles.modalContainer}>
+            <Icon
+              name='ios-close-outline'
+              onPress={this._closeModal}
+              style={styles.closeIcon} />
+            {
+              this.state.audioUploaded && !this.state.publishing
+              ? <View style={styles.fieldBox}>
+                  <TextInput
+                    placeholder={'给狗狗一句宣言'}
+                    style={styles.inputField}
+                    autoCapitalize={'none'}
+                    autoCorrect={false}
+                    defaultValue={this.state.title}
+                    onChangeText={(text) => {
+                      this.setState({
+                        title: text
+                      })
+                    }}
+                  />
+                </View>
+                : null
+            }
+
+            {
+              this.state.publishing
+              ? <View style={styles.loadingBox}>
+                  <Text style={styles.loadingText}>
+                    耐心等一下，拼命为您生成专属视频中。。。</Text>
+                  {
+                    this.state.willPublish
+                    ? <Text style={styles.loadingText}>
+                      正在合成视频音频。。。</Text>
+                    : null
+                  }
+                  {
+                    this.state.publishProgress > 0.3
+                    ? <Text style={styles.loadingText}>
+                      开始上传喽！</Text>
+                    : null
+                  }
+                  
+                  <Progress.Circle 
+                    showsText={true}
+                    size={60}
+                    color={'#ee735c'}
+                    progress={this.state.publishProgress} 
+                  />
+                </View>
+                : null
+            }
+            <View style={styles.submitBox}>
+              {
+                this.state.audioUploaded && !this.state.publishing
+                ? <Button
+                  style={styles.btn}
+                  onPress={this._submit}>发布视频</Button>
+                : null
+              }
+            </View>
+          </View>
+        </Modal>
       </View>
     )
   }
