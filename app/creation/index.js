@@ -6,6 +6,7 @@ var Icon = require('react-native-vector-icons/Ionicons')
 var request = require('../common/request')
 var config = require('../common/config')
 var Detail = require('./detail')
+var util = require('../common/util')
 
 var Text = React.Text
 var View = React.View
@@ -17,6 +18,7 @@ var TouchableHighlight = React.TouchableHighlight
 var ActivityIndicatorIOS = React.ActivityIndicatorIOS
 var RefreshControl = React.RefreshControl
 var AlertIOS = React.AlertIOS
+var AsyncStorage = React.AsyncStorage
 
 var width = Dimensions.get('window').width
 
@@ -71,7 +73,7 @@ var Item = React.createClass({
         <View style={styles.item}>
           <Text style={styles.title}>{row.title}</Text>
           <Image
-            source={{uri: row.thumb}}
+            source={{uri: util.thumb(row.qiniu_thumb)}}
             style={styles.thumb}
           >
             <Icon
@@ -123,7 +125,26 @@ var List = React.createClass({
   },
 
   componentDidMount: function() {
-    this._fetchData(1)
+    var that = this
+    
+    AsyncStorage.getItem('user')
+      .then((data) => {
+        var user
+
+        // console.log(data)
+
+        if (data) {
+          user = JSON.parse(data)
+        }
+
+        if (user && user.accessToken) {
+          that.setState({
+            user: user
+          }), function() {
+            that._fetchData(1)
+          }
+        }
+      })
   },
 
   _fetchData: function (page){
@@ -140,24 +161,24 @@ var List = React.createClass({
     }
 
     request.get(config.api.base + config.api.creations, {
-      accessToken: 'abcdef',
+      accessToken: this.state.user.accessToken,
       page: page
     })
     .then((data) => {
-      if(data.success) {
-        var items = cachedResults.items.slice()
-
-        if (page !== 0) {
-          items = items.concat(data.data)
-          cachedResults.nextPage += 1
-        } 
-        else {
-          items = data.data.concat(items)
-        }
-        cachedResults.items = items
-        cachedResults.total = data.total
-
-        setTimeout(function() {
+      if(data && data.success) { 
+        if (data.data.length > 0) {
+          var items = cachedResults.items.slice()
+          
+          if (page !== 0) {
+            items = items.concat(data.data)
+            cachedResults.nextPage += 1
+          } 
+          else {
+            items = data.data.concat(items)
+          }
+          cachedResults.items = items
+          cachedResults.total = data.total
+  
           if (page !== 0) {
             that.setState({
               isLoadingTail: false,
@@ -169,7 +190,7 @@ var List = React.createClass({
               dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
             })
           }
-        }, 20)
+        }
       }
     })
     .catch((error) => {
