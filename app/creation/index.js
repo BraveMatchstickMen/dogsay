@@ -47,7 +47,7 @@ var Item = React.createClass({
     var body = {
       id: row._id,
       up: up ? 'yes' : 'no',
-      accessToken: 'abcee'
+      accessToken: this.props.user.accessToken
     }
 
     request.post(url, body)
@@ -107,31 +107,33 @@ var Item = React.createClass({
 // ***************************** 上面是一个类 *********************************
 
 var List = React.createClass({
-  getInitialState: function() {
-    var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+  getInitialState() {
+    var ds = new ListView.DataSource({
+      rowHasChanged: (r1, r2) => r1 !== r2
+    })
+
     return {
       dataSource: ds.cloneWithRows([]),
       isLoadingTail: false,
       nextPage: 0,
       isRefreshing: false 
-    };
+    }
   },
 
-  _renderRow: function(row) {
+  _renderRow(row) {
     return <Item 
       key={row._id} 
+      user={this.state.user}
       onSelect={() => this._loadPage(row)} 
       row={row} />
   },
 
-  componentDidMount: function() {
+  componentDidMount() {
     var that = this
     
     AsyncStorage.getItem('user')
       .then((data) => {
         var user
-
-        // console.log(data)
 
         if (data) {
           user = JSON.parse(data)
@@ -147,7 +149,7 @@ var List = React.createClass({
       })
   },
 
-  _fetchData: function (page){
+  _fetchData(page){
     var that = this
 
     if (page !== 0) {
@@ -165,6 +167,7 @@ var List = React.createClass({
       page: page
     })
     .then((data) => {
+      console.log(data)
       if(data && data.success) { 
         if (data.data.length > 0) {
           var items = cachedResults.items.slice()
@@ -251,7 +254,7 @@ var List = React.createClass({
     })
   },
 
-  render: function() {
+  render() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -262,7 +265,6 @@ var List = React.createClass({
           renderRow={this._renderRow}
           renderFooter={this._renderFooter}
           onEndReached={this._fetchMoreData}
-          onEndReachedThreshold={20}
           refreshControl={
             <RefreshControl
             refreshing={this.state.isRefreshing}
@@ -271,6 +273,7 @@ var List = React.createClass({
             title='拼命加载中'
             />
           }
+          onEndReachedThreshold={20}
           enableEmptySections={true}
           showsVerticalScrollIndicator={false}
           automaticallyAdjustContentInsets={false} 
