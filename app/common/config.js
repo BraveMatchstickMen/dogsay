@@ -8,6 +8,8 @@ module.exports = {
 		}
 	},
 	qiniu: {
+		video: 'http://oy41w5cp2.bkt.clouddn.com/',
+		thumb: 'http://oy41w5cp2.bkt.clouddn.com/',
 		upload: 'http://upload.qiniu.com'
 	},
 	cloudinary: {
