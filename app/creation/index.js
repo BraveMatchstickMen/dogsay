@@ -142,9 +142,9 @@ var List = React.createClass({
         if (user && user.accessToken) {
           that.setState({
             user: user
-          }), function() {
+          }, function() {
             that._fetchData(1)
-          }
+          })
         }
       })
   },
