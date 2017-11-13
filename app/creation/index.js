@@ -162,52 +162,67 @@ var List = React.createClass({
       })
     }
 
+    var user = this.state.user
     request.get(config.api.base + config.api.creations, {
-      accessToken: this.state.user.accessToken,
+      accessToken: user.accessToken,
       page: page
     })
-    .then((data) => {
-      console.log(data)
-      if(data && data.success) { 
-        if (data.data.length > 0) {
-          var items = cachedResults.items.slice()
-          
-          if (page !== 0) {
-            items = items.concat(data.data)
-            cachedResults.nextPage += 1
-          } 
-          else {
-            items = data.data.concat(items)
-          }
-          cachedResults.items = items
-          cachedResults.total = data.total
-  
-          if (page !== 0) {
-            that.setState({
-              isLoadingTail: false,
-              dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
+      .then((data) => {
+        console.log(data)
+        if(data && data.success) { 
+          if (data.data.length > 0) {
+            
+            data.data.map(function(item) {
+              var votes = item.votes || []
+
+              if (votes.indexOf(user._id) > -1) {
+                item.voted = true
+              }
+              else {
+                item.voted = false
+              }
+
+              return item
             })
-          } else {
-            that.setState({
-              isRefreshing: false,
-              dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
-            })
+
+            var items = cachedResults.items.slice()
+            
+            if (page !== 0) {
+              items = items.concat(data.data)
+              cachedResults.nextPage += 1
+            } 
+            else {
+              items = data.data.concat(items)
+            }
+            cachedResults.items = items
+            cachedResults.total = data.total
+    
+            if (page !== 0) {
+              that.setState({
+                isLoadingTail: false,
+                dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
+              })
+            } else {
+              that.setState({
+                isRefreshing: false,
+                dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
+              })
+            }
           }
         }
-      }
-    })
-    .catch((error) => {
-      if (page !== 0) {
-        this.setState({
-          isLoadingTail: false
-        })
-      } 
-      else {
-        this.setState({
-          isRefreshing: false
-        })
-      } 
-    });
+      })
+      .catch((error) => {
+        if (page !== 0) {
+          this.setState({
+            isLoadingTail: false
+          })
+        } 
+        else {
+          this.setState({
+            isRefreshing: false
+          })
+        } 
+      });
   },
 
   _hasMore() {
