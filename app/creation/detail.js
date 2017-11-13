@@ -6,6 +6,7 @@ var Video = require('react-native-video').default
 var Button = require('react-native-button').default
 var config = require('../common/config')
 var request = require('../common/request')
+var util = require('../common/util')
 
 var Text = React.Text
 var View = React.View
@@ -146,23 +147,25 @@ var Detail = React.createClass({
     })
 
     request.get(config.api.base + config.api.comment, {
-      accessToken: 'abcdef',
-      creation: 124,
+      accessToken: this.state.user.accessToken,
+      creation: this.state.data._id,
       page: page
     })
     .then((data) => {
-      if(data.success) {
-        var items = cachedResults.items.slice()
-
-        items = items.concat(data.data)
-        cachedResults.nextPage += 1
-        cachedResults.items = items
-        cachedResults.total = data.total
-
-        that.setState({
-          isLoadingTail: false,
-          dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
-        })
+      if(data && data.success) {
+        if (data.data.length > 0) {
+          var items = cachedResults.items.slice()
+          
+          items = items.concat(data.data)
+          cachedResults.nextPage += 1
+          cachedResults.items = items
+          cachedResults.total = data.total
+  
+          that.setState({
+            isLoadingTail: false,
+            dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
+          })
+        }
       }
     })
     .catch((error) => {
@@ -202,7 +205,7 @@ var Detail = React.createClass({
   _renderRow(row) {
     return (
       <View key={row._id} style={styles.replyBox}>
-        <Image style={styles.replyAvatar} source={{uri: row.replyBy.avatar}} />
+        <Image style={styles.replyAvatar} source={{uri: util.avatar(row.replyBy.avatar)}} />
         <View style={styles.reply}>
           <Text style={styles.replyNickname}>{row.replyBy.nickname}</Text>
           <Text style={styles.replyContent}>{row.content}</Text>
@@ -235,7 +238,7 @@ var Detail = React.createClass({
     return (
       <View style={styles.listHeader}>
         <View style={styles.infoBox}>
-          <Image style={styles.avatar} source={{uri: data.author.avatar}} />
+          <Image style={styles.avatar} source={{uri: util.avatar(data.author.avatar)}} />
           <View style={styles.descBox}>
             <Text style={styles.nickname}>{data.author.nickname}</Text>
             <Text style={styles.title}>{data.title}</Text>
@@ -274,9 +277,11 @@ var Detail = React.createClass({
       isSending: true
     }, function() {
       var body = {
-        accessToken: 'abc',
-        creation: '1234',
-        content: this.state.content
+        accessToken: this.state.user.accessToken,
+        comment: {
+          creation: this.state.data._id,
+          content: this.state.content
+        }
       }
 
       var url = config.api.base + config.api.comment
@@ -286,14 +291,7 @@ var Detail = React.createClass({
           if (data && data.success) {
             var items = cachedResults.items.slice()
 
-            items = [{
-              content: that.state.content,
-              replyBy: {
-                avatar: 'https://bestswifter.com/content/images/2016/01/avator.jpg',
-                nickname: '狗狗狗说'
-              }
-            }].concat(items)
-
+            items = data.data.concat(items)
             cachedResults.items = items
             cachedResults.total = cachedResults.total + 1
 
@@ -332,7 +330,7 @@ var Detail = React.createClass({
         <View style={styles.videoBox}>
           <Video
             ref='videoPlayer'
-            source={{uri: data.video}}
+            source={{uri: util.video(data.qiniu_video)}}
             style={styles.video}
             volume={5}
             paused={this.state.paused}

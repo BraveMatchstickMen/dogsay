@@ -7,9 +7,13 @@ module.exports = {
 			'Content-Type': 'application/json'
 		}
 	},
+	backup: {
+		avatar: ''
+	},
 	qiniu: {
 		video: 'http://oy41w5cp2.bkt.clouddn.com/',
 		thumb: 'http://oy41w5cp2.bkt.clouddn.com/',
+		avatar: 'http://ojwibjnxi.bkt.clouddn.com/',
 		upload: 'http://upload.qiniu.com'
 	},
 	cloudinary: {
