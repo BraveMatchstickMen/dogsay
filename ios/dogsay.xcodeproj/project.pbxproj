@@ -369,6 +369,7 @@
 				00E356EF1AD99517003FC87E /* dogsayTests */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				163B7CF013054E2692ADAB0B /* Resources */,
+				E941E67C1FBB2CCD00055183 /* Recovered References */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -405,6 +406,15 @@
 				DDC30F301DFFD6C3001E2846 /* libART.a */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		E941E67C1FBB2CCD00055183 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				2C945DE9ED464F0C9881587E /* libRCTVideo.a */,
+				76A4487E556D46ADB5F5CBDE /* libRNImagePicker.a */,
+			);
+			name = "Recovered References";
 			sourceTree = "<group>";
 		};
 		E9F4DC1C1D9D7B8200312D3C /* Products */ = {
