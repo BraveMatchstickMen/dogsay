@@ -1,6 +1,7 @@
 package com.dogsay;
 
 import com.facebook.react.ReactActivity;
+import com.rnim.rn.audio.ReactNativeAudioPackage;
 import com.imagepicker.ImagePickerPackage;
 import com.brentvatne.react.ReactVideoPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
@@ -38,6 +39,7 @@ public class MainActivity extends ReactActivity {
     protected List<ReactPackage> getPackages() {
         return Arrays.<ReactPackage>asList(
             new MainReactPackage(),
+            new ReactNativeAudioPackage(),
             new ImagePickerPackage(),
             new ReactVideoPackage(),
             new VectorIconsPackage()

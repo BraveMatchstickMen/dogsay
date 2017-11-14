@@ -8,6 +8,8 @@ module.exports = {
 		}
 	},
 	qiniu: {
+		video: 'http://oy41w5cp2.bkt.clouddn.com/',
+		thumb: 'http://oy41w5cp2.bkt.clouddn.com/',
 		upload: 'http://upload.qiniu.com'
 	},
 	cloudinary: {
@@ -24,6 +26,8 @@ module.exports = {
 		creations: 'api/creations',
 		comment: 'api/comments',
 		up: 'api/up',
+		video: 'api/creations/video',
+		audio: 'api/creations/audio',
 		signup: 'api/u/signup',
 		verify: 'api/u/verify',
 		update: 'api/u/update',

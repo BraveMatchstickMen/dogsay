@@ -6,6 +6,7 @@ var Icon = require('react-native-vector-icons/Ionicons')
 var request = require('../common/request')
 var config = require('../common/config')
 var Detail = require('./detail')
+var util = require('../common/util')
 
 var Text = React.Text
 var View = React.View
@@ -17,6 +18,7 @@ var TouchableHighlight = React.TouchableHighlight
 var ActivityIndicatorIOS = React.ActivityIndicatorIOS
 var RefreshControl = React.RefreshControl
 var AlertIOS = React.AlertIOS
+var AsyncStorage = React.AsyncStorage
 
 var width = Dimensions.get('window').width
 
@@ -45,7 +47,7 @@ var Item = React.createClass({
     var body = {
       id: row._id,
       up: up ? 'yes' : 'no',
-      accessToken: 'abcee'
+      accessToken: this.props.user.accessToken
     }
 
     request.post(url, body)
@@ -71,7 +73,7 @@ var Item = React.createClass({
         <View style={styles.item}>
           <Text style={styles.title}>{row.title}</Text>
           <Image
-            source={{uri: row.thumb}}
+            source={{uri: util.thumb(row.qiniu_thumb)}}
             style={styles.thumb}
           >
             <Icon
@@ -105,28 +107,49 @@ var Item = React.createClass({
 // ***************************** 上面是一个类 *********************************
 
 var List = React.createClass({
-  getInitialState: function() {
-    var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+  getInitialState() {
+    var ds = new ListView.DataSource({
+      rowHasChanged: (r1, r2) => r1 !== r2
+    })
+
     return {
       dataSource: ds.cloneWithRows([]),
       isLoadingTail: false,
       nextPage: 0,
       isRefreshing: false 
-    };
+    }
   },
 
-  _renderRow: function(row) {
+  _renderRow(row) {
     return <Item 
       key={row._id} 
+      user={this.state.user}
       onSelect={() => this._loadPage(row)} 
       row={row} />
   },
 
-  componentDidMount: function() {
-    this._fetchData(1)
+  componentDidMount() {
+    var that = this
+    
+    AsyncStorage.getItem('user')
+      .then((data) => {
+        var user
+
+        if (data) {
+          user = JSON.parse(data)
+        }
+
+        if (user && user.accessToken) {
+          that.setState({
+            user: user
+          }, function() {
+            that._fetchData(1)
+          })
+        }
+      })
   },
 
-  _fetchData: function (page){
+  _fetchData(page){
     var that = this
 
     if (page !== 0) {
@@ -140,24 +163,25 @@ var List = React.createClass({
     }
 
     request.get(config.api.base + config.api.creations, {
-      accessToken: 'abcdef',
+      accessToken: this.state.user.accessToken,
       page: page
     })
     .then((data) => {
-      if(data.success) {
-        var items = cachedResults.items.slice()
-
-        if (page !== 0) {
-          items = items.concat(data.data)
-          cachedResults.nextPage += 1
-        } 
-        else {
-          items = data.data.concat(items)
-        }
-        cachedResults.items = items
-        cachedResults.total = data.total
-
-        setTimeout(function() {
+      console.log(data)
+      if(data && data.success) { 
+        if (data.data.length > 0) {
+          var items = cachedResults.items.slice()
+          
+          if (page !== 0) {
+            items = items.concat(data.data)
+            cachedResults.nextPage += 1
+          } 
+          else {
+            items = data.data.concat(items)
+          }
+          cachedResults.items = items
+          cachedResults.total = data.total
+  
           if (page !== 0) {
             that.setState({
               isLoadingTail: false,
@@ -169,7 +193,7 @@ var List = React.createClass({
               dataSource: that.state.dataSource.cloneWithRows(cachedResults.items)
             })
           }
-        }, 20)
+        }
       }
     })
     .catch((error) => {
@@ -230,7 +254,7 @@ var List = React.createClass({
     })
   },
 
-  render: function() {
+  render() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -241,7 +265,6 @@ var List = React.createClass({
           renderRow={this._renderRow}
           renderFooter={this._renderFooter}
           onEndReached={this._fetchMoreData}
-          onEndReachedThreshold={20}
           refreshControl={
             <RefreshControl
             refreshing={this.state.isRefreshing}
@@ -250,6 +273,7 @@ var List = React.createClass({
             title='拼命加载中'
             />
           }
+          onEndReachedThreshold={20}
           enableEmptySections={true}
           showsVerticalScrollIndicator={false}
           automaticallyAdjustContentInsets={false} 
