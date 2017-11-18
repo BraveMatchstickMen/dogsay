@@ -19,6 +19,7 @@ var ListView = React.ListView
 var TextInput = React.TextInput
 var Modal = React.Modal
 var AlertIOS = React.AlertIOS
+var AsyncStorage = React.AsyncStorage
 
 var width = Dimensions.get('window').width
 
@@ -136,7 +137,24 @@ var Detail = React.createClass({
   },
 
   componentDidMount() {
-    this._fetchData()
+    var that = this
+    
+    AsyncStorage.getItem('user')
+      .then((data) => {
+        var user
+
+        if (data) {
+          user = JSON.parse(data)
+        }
+
+        if (user && user.accessToken) {
+          that.setState({
+            user: user
+          }, function() {
+            that._fetchData()
+          })
+        }
+      })
   },
 
   _fetchData: function (page){

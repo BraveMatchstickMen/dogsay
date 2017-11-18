@@ -658,7 +658,7 @@ var Edit = React.createClass({
                     progress={this.state.publishProgress} 
                   />
                 </View>
-                : null
+              : null
             }
             <View style={styles.submitBox}>
               {
