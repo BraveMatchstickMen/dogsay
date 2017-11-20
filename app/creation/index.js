@@ -231,6 +231,9 @@ var List = React.createClass({
 
   _fetchMoreData() {
     if (!this._hasMore() || this.state.isLoadingTail) {
+      this.setState({
+        isLoadingTail: false
+      }) 
       return
     }
     var page = cachedResults.nextPage

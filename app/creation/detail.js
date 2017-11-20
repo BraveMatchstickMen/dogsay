@@ -157,7 +157,7 @@ var Detail = React.createClass({
       })
   },
 
-  _fetchData: function (page){
+  _fetchData(page) {
     var that = this
     
     this.setState({
@@ -199,6 +199,9 @@ var Detail = React.createClass({
 
   _fetchMoreData() {
     if (!this._hasMore() || this.state.isLoadingTail) {
+      this.setState({
+        isLoadingTail: false
+      })
       return
     }
     var page = cachedResults.nextPage
@@ -471,6 +474,7 @@ var styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ee753c',
     borderRadius: 4,
+    alignSelf: 'center',
     color: '#ee753c',
     fontSize: 18
   },
